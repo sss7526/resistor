@@ -258,9 +258,9 @@ func encodeFourBand(resistance float64, tolerance float64) ([]Color, error) {
 		d1 := intVal / 10
 		d2 := intVal % 10
 
-		c1, ok1 := digitToColor(d1)
-		c2, ok2 := digitToColor(d2)
-		tolColor, okTol := toleranceToColor(tolerance)
+		c1, ok1 := DigitColor[d1]
+		c2, ok2 := DigitColor[d2]
+		tolColor, okTol := ToleranceColor[tolerance]
 
 		if !ok1 || !ok2 || !okTol {
 			return nil, ErrUnencodableValue
@@ -302,10 +302,10 @@ func encodeFiveBand(resistance float64, tolerance float64) ([]Color, error) {
 		d2 := (intVal / 10) % 10
 		d3 := intVal % 10
 
-		c1, ok1 := digitToColor(d1)
-		c2, ok2 := digitToColor(d2)
-		c3, ok3 := digitToColor(d3)
-		tolColor, okTol := toleranceToColor(tolerance)
+		c1, ok1 := DigitColor[d1]
+		c2, ok2 := DigitColor[d2]
+		c3, ok3 := DigitColor[d3]
+		tolColor, okTol := ToleranceColor[tolerance]
 
 		if !ok1 || !ok2 || !ok3 || !okTol {
 			return nil, ErrUnencodableValue
@@ -321,37 +321,4 @@ func encodeFiveBand(resistance float64, tolerance float64) ([]Color, error) {
 	}
 
 	return nil, ErrUnencodableValue
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// Helpers
-///////////////////////////////////////////////////////////////////////////////
-
-/*
-digitToColor performs a reverse lookup of DigitValue.
-
-This is safe because DigitValue is a bijection
-between colors and digits (0–9).
-*/
-func digitToColor(digit int) (Color, bool) {
-	for c, v := range DigitValue {
-		if v == digit {
-			return c, true
-		}
-	}
-	return "", false
-}
-
-/*
-toleranceToColor performs a reverse lookup of ToleranceValue.
-
-If no exact match exists, encoding fails upstream.
-*/
-func toleranceToColor(tol float64) (Color, bool) {
-	for c, v := range ToleranceValue {
-		if v == tol {
-			return c, true
-		}
-	}
-	return "", false
 }
