@@ -1,15 +1,16 @@
-package resistor
+package resistor_test
 
 import (
 	"fmt"
+	"github.com/sss7526/resistor"
 )
 
 func ExampleNearestStandard() {
-	
-	v, _ := NearestStandard(500, E24, RoundNearest)
+
+	v, _ := resistor.NearestStandard(500, resistor.E24, resistor.RoundNearest)
 	fmt.Println(v)
 
-	v, _ = NearestStandard(500, E12, RoundUp)
+	v, _ = resistor.NearestStandard(500, resistor.E12, resistor.RoundUp)
 	fmt.Println(v)
 
 	// Output:
