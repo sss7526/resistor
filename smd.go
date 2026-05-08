@@ -16,14 +16,17 @@ import (
 SMDEncodingMode controls how EncodeSMD formats output.
 
 SMDAuto:
-    Automatically choose 3-digit or 4-digit encoding.
-    If not representable, return error.
+
+	Automatically choose 3-digit or 4-digit encoding.
+	If not representable, return error.
 
 SMDStandard:
-    Force 3/4-digit encoding only.
+
+	Force 3/4-digit encoding only.
 
 SMDEIA96:
-    Force EIA‑96 encoding (1% precision format).
+
+	Force EIA‑96 encoding (1% precision format).
 */
 type SMDEncodingMode int
 
@@ -43,17 +46,21 @@ DecodeSMD decodes a surface-mount resistor marking.
 Supported formats:
 
 3-digit:
-    "472" → 47 × 10² = 4700Ω
+
+	"472" → 47 × 10² = 4700Ω
 
 4-digit:
-    "4701" → 470 × 10¹ = 4700Ω
+
+	"4701" → 470 × 10¹ = 4700Ω
 
 R-notation:
-    "4R7" → 4.7Ω
-    "R47" → 0.47Ω
+
+	"4R7" → 4.7Ω
+	"R47" → 0.47Ω
 
 EIA‑96:
-    "01C" → lookup(01) × multiplier(C)
+
+	"01C" → lookup(01) × multiplier(C)
 
 Tolerance is not encoded in SMD markings.
 TolerancePct will be left as zero.
@@ -110,15 +117,18 @@ EncodeSMD encodes a resistance value into an SMD marking.
 Mode behavior:
 
 SMDAuto:
-    Attempt standard 3/4 digit encoding first.
-    If not possible, error.
+
+	Attempt standard 3/4 digit encoding first.
+	If not possible, error.
 
 SMDStandard:
-    Only use 3/4 digit encoding.
+
+	Only use 3/4 digit encoding.
 
 SMDEIA96:
-    Attempt EIA‑96 encoding.
-    If value cannot be represented exactly in E96 series, error.
+
+	Attempt EIA‑96 encoding.
+	If value cannot be represented exactly in E96 series, error.
 */
 func EncodeSMD(resistance float64, mode SMDEncodingMode) (string, error) {
 
@@ -130,7 +140,7 @@ func EncodeSMD(resistance float64, mode SMDEncodingMode) (string, error) {
 
 	case SMDAuto, SMDStandard:
 		return encodeStandardSMD(resistance)
-	
+
 	case SMDEIA96:
 		return encodeEIA96(resistance)
 
@@ -182,7 +192,7 @@ func decodeRNotation(m string) (float64, error) {
 	if right == "" {
 		right = "0"
 	}
-	
+
 	combined := left + "." + right
 	return strconv.ParseFloat(combined, 64)
 }
@@ -222,29 +232,29 @@ func decodeEIA96(m string) (float64, error) {
 		return 0, fmt.Errorf("invalid EIA-96 multiplier")
 	}
 
-	return roundToSignificant(base * mult, 6), nil
+	return roundToSignificant(base*mult, 6), nil
 }
 
 func encodeEIA96(resistance float64) (string, error) {
 
-    for letter, multiplier := range eia96Multipliers {
+	for letter, multiplier := range eia96Multipliers {
 
-        base := resistance / multiplier
+		base := resistance / multiplier
 
-        for i, v := range eia96Base {
+		for i, v := range eia96Base {
 
-            if math.Abs(v-base) < 1e-6 {
-                return fmt.Sprintf("%02d%c", i+1, letter), nil
-            }
-        }
-    }
+			if math.Abs(v-base) < 1e-6 {
+				return fmt.Sprintf("%02d%c", i+1, letter), nil
+			}
+		}
+	}
 
-    return "", fmt.Errorf("value not representable in EIA‑96 series")
+	return "", fmt.Errorf("value not representable in EIA‑96 series")
 }
 
 func findEIA96Multiplier(mult float64) (rune, bool) {
 	for k, v := range eia96Multipliers {
-		if math.Abs(v - mult) < 1e9 {
+		if math.Abs(v-mult) < 1e9 {
 			return k, true
 		}
 	}
@@ -257,27 +267,27 @@ func findEIA96Multiplier(mult float64) (rune, bool) {
 
 func encodeStandardSMD(resistance float64) (string, error) {
 
-    // Try 3-digit first
-    for exp := 0; exp <= 9; exp++ {
+	// Try 3-digit first
+	for exp := 0; exp <= 9; exp++ {
 
-        scaled := resistance / math.Pow(10, float64(exp))
+		scaled := resistance / math.Pow(10, float64(exp))
 
-        if scaled >= 10 && scaled < 100 && math.Mod(scaled, 1) == 0 {
-            return fmt.Sprintf("%02d%d", int(scaled), exp), nil
-        }
-    }
+		if scaled >= 10 && scaled < 100 && math.Mod(scaled, 1) == 0 {
+			return fmt.Sprintf("%02d%d", int(scaled), exp), nil
+		}
+	}
 
-    // Then try 4-digit
-    for exp := 0; exp <= 9; exp++ {
+	// Then try 4-digit
+	for exp := 0; exp <= 9; exp++ {
 
-        scaled := resistance / math.Pow(10, float64(exp))
+		scaled := resistance / math.Pow(10, float64(exp))
 
-        if scaled >= 100 && scaled < 1000 && math.Mod(scaled, 1) == 0 {
-            return fmt.Sprintf("%03d%d", int(scaled), exp), nil
-        }
-    }
+		if scaled >= 100 && scaled < 1000 && math.Mod(scaled, 1) == 0 {
+			return fmt.Sprintf("%03d%d", int(scaled), exp), nil
+		}
+	}
 
-    return "", fmt.Errorf("value not representable in 3/4-digit SMD format")
+	return "", fmt.Errorf("value not representable in 3/4-digit SMD format")
 }
 
 ///////////////////////////////////////////////////////////////////////////////
