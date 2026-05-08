@@ -57,6 +57,10 @@ test-select:
 test-infer:
 	go test -v -run TestInferResistor
 
+.PHONY: test-analyze
+test-analyze:
+	go test -v -run TestAnalyzeResistor
+
 # ---------------------------------------
 # Fuzz Targets
 # ---------------------------------------
@@ -105,6 +109,7 @@ help:
 	@echo "  make test-series    - Run E-series tests only"
 	@echo "  make test-select    - Run selection tests only"
 	@echo "  make test-infer     - Run inference tests only"
+	@echo "  make test-analyze   - Run analysis tests only"
 	@echo "  make fuzz           - Run all fuzz tests"
 	@echo "  make fuzz-bands     - Fuzz DecodeBands"
 	@echo "  make fuzz-smd       - Fuzz DecodeSMD"
