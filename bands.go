@@ -100,7 +100,7 @@ This function strictly follows that model.
 func DecodeBands(bands []Color) (ResistorSpec, error) {
 	var spec ResistorSpec
 
-	if len(bands) != 4 && len(bands) != 5 {
+	if len(bands) != 4 && len(bands) != 5  && len(bands) != 6 {
 		return spec, ErrInvalidBandCount
 	}
 
@@ -130,7 +130,7 @@ func DecodeBands(bands []Color) (ResistorSpec, error) {
 		}
 
 	} else {
-		// 5-band: 3 digits + multiplier + tolerance
+		// 5-band or 6 band: 3 digits + multiplier + tolerance
 
 		d1, ok1 := DigitValue[bands[0]]
 		d2, ok2 := DigitValue[bands[1]]
@@ -161,6 +161,13 @@ func DecodeBands(bands []Color) (ResistorSpec, error) {
 	// Apply multiplier to compute final resistance.
 	spec.ResistanceOhms = float64(value) * multiplier
 	spec.TolerancePct = tolerance
+
+	// If 6-band, decode temperature coefficient
+	if len(bands) == 6 {
+		if ppm, ok := TempCoeffValue[bands[5]]; ok {
+			spec.TempCoeffPPM = ppm
+		}
+	}
 
 	return spec, nil
 }

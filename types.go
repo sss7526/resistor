@@ -5,7 +5,16 @@ type PackageType string
 
 const (
 	ThroughHole PackageType = "through_hole"
+
+	// Generic SMD (unknown size)
 	SMD         PackageType = "smd"
+
+	// Specific SMD sizes
+    SMD0402 PackageType = "smd_0402"
+    SMD0603 PackageType = "smd_0603"
+    SMD0805 PackageType = "smd_0805"
+    SMD1206 PackageType = "smd_1206"
+	
 	Axial       PackageType = "axial"
 	Radial      PackageType = "radial"
 	UnknownPKG  PackageType = "unkown"

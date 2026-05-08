@@ -95,3 +95,14 @@ var TempCoeffPPM = map[Color]int{
 	Blue:   10,
 	Violet: 5,
 }
+
+// TempCoeffValue maps 6th band color → temperature coefficient in ppm/°C.
+// Defined according to IEC 60062.
+var TempCoeffValue = map[Color]int{
+    Brown:  100,
+    Red:    50,
+    Orange: 15,
+    Yellow: 25,
+    Blue:   10,
+    Violet: 5,
+}
