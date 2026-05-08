@@ -145,7 +145,7 @@ func SelectStandardResistor(req SelectionRequest) (SelectionResult, error) {
 	// Encode Color Bands
 	// ---------------------------------------------------------------------
 
-	bands, err := EncodeBands(selected, tolerance)
+	bands, err := EncodeBands(ResistorSpec{ResistanceOhms: selected, TolerancePct: tolerance})
 	if err != nil {
 		return result, err
 	}

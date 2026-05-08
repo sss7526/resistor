@@ -7,17 +7,17 @@ const (
 	ThroughHole PackageType = "through_hole"
 
 	// Generic SMD (unknown size)
-	SMD         PackageType = "smd"
+	SMD PackageType = "smd"
 
 	// Specific SMD sizes
-    SMD0402 PackageType = "smd_0402"
-    SMD0603 PackageType = "smd_0603"
-    SMD0805 PackageType = "smd_0805"
-    SMD1206 PackageType = "smd_1206"
-	
-	Axial       PackageType = "axial"
-	Radial      PackageType = "radial"
-	UnknownPKG  PackageType = "unkown"
+	SMD0402 PackageType = "smd_0402"
+	SMD0603 PackageType = "smd_0603"
+	SMD0805 PackageType = "smd_0805"
+	SMD1206 PackageType = "smd_1206"
+
+	Axial      PackageType = "axial"
+	Radial     PackageType = "radial"
+	UnknownPKG PackageType = "unkown"
 )
 
 // ResistorType represents construction material
@@ -29,6 +29,7 @@ const (
 	ThickFilm  ResistorType = "thick_film"
 	ThinFilm   ResistorType = "thin_film"
 	Wirewound  ResistorType = "wirewound"
+	MetalOxide ResistorType = "metal_oxide"
 	UnkownType ResistorType = "unknown"
 )
 

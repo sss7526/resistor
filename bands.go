@@ -100,7 +100,7 @@ This function strictly follows that model.
 func DecodeBands(bands []Color) (ResistorSpec, error) {
 	var spec ResistorSpec
 
-	if len(bands) != 4 && len(bands) != 5  && len(bands) != 6 {
+	if len(bands) != 4 && len(bands) != 5 && len(bands) != 6 {
 		return spec, ErrInvalidBandCount
 	}
 
@@ -177,64 +177,54 @@ func DecodeBands(bands []Color) (ResistorSpec, error) {
 ///////////////////////////////////////////////////////////////////////////////
 
 /*
-EncodeBands converts a resistance value and tolerance into
-its IEC color band representation.
+EncodeBands converts a ResistorSpec into IEC color bands.
 
-Design Decision:
-
-We must choose between:
-
-  - 4-band format (2 significant digits)
-  - 5-band format (3 significant digits)
-
-Engineering convention:
-
-	Precision resistors (≤ 2% tolerance) typically use 5 bands.
-	Standard resistors (> 2%) typically use 4 bands.
-
-This is not inference — it is an encoding convention choice.
-
-Encoding Strategy:
-
-We do NOT directly extract digits using logarithms.
-
-Instead, we:
-
- 1. Iterate through all valid multipliers
- 2. Divide resistance by multiplier
- 3. Check whether the result is an integer within valid digit range
- 4. If valid, extract digits
-
-Why?
-
-Because band encoding is constrained:
+Behavior:
 
 4-band:
 
-	significant value must be between 10 and 99 (2 digits)
+	Used when tolerance > 2% and TempCoeffPPM == 0
 
 5-band:
 
-	significant value must be between 100 and 999 (3 digits)
+	Used when tolerance ≤ 2% and TempCoeffPPM == 0
 
-If dividing by a multiplier yields a clean integer in that range,
-the resistor can be encoded exactly.
+6-band:
 
-If not, it cannot be represented exactly in standard band format.
+	Used when TempCoeffPPM != 0
+
+TempCoeffPPM must match a defined TempCoeffValue entry exactly.
 */
-func EncodeBands(resistance float64, tolerance float64) ([]Color, error) {
+func EncodeBands(spec ResistorSpec) ([]Color, error) {
 
-	if resistance <= 0 {
+	if spec.ResistanceOhms <= 0 {
 		return nil, ErrUnencodableValue
 	}
 
-	useFiveBand := tolerance <= 2.0
-
-	if useFiveBand {
-		return encodeFiveBand(resistance, tolerance)
+	// 6-band encoding if tempco provided
+	if spec.TempCoeffPPM != 0 {
+		return encodeSixBand(spec)
 	}
 
-	return encodeFourBand(resistance, tolerance)
+	// 5-band for precision
+	if spec.TolerancePct <= 2.0 {
+		return encodeFiveBand(spec.ResistanceOhms, spec.TolerancePct)
+	}
+
+	// Default 4-band
+	return encodeFourBand(spec.ResistanceOhms, spec.TolerancePct)
+}
+
+/*
+EncodeBandsSimple preserves backward compatibility.
+
+Encodes resistance and tolerance without tempco.
+*/
+func EncodeBandsSimple(resistance, tolerance float64) ([]Color, error) {
+	return EncodeBands(ResistorSpec{
+		ResistanceOhms: resistance,
+		TolerancePct:   tolerance,
+	})
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -328,4 +318,24 @@ func encodeFiveBand(resistance float64, tolerance float64) ([]Color, error) {
 	}
 
 	return nil, ErrUnencodableValue
+}
+
+func encodeSixBand(spec ResistorSpec) ([]Color, error) {
+
+	bands, err := encodeFiveBand(spec.ResistanceOhms, spec.TolerancePct)
+	if err != nil {
+		return nil, err
+	}
+
+	tempColor, ok := tempCoeffToColor(spec.TempCoeffPPM)
+	if !ok {
+		return nil, ErrUnencodableValue
+	}
+
+	return append(bands, tempColor), nil
+}
+
+func tempCoeffToColor(ppm int) (Color, bool) {
+	c, ok := TempCoeffColor[ppm]
+	return c, ok
 }

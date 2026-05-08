@@ -119,7 +119,7 @@ func TestEncodeBands_ValidCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			bands, err := EncodeBands(tt.resistance, tt.tolerance)
+			bands, err := EncodeBandsSimple(tt.resistance, tt.tolerance)
 			require.NoError(t, err)
 			require.Equal(t, tt.wantBands, bands)
 		})
@@ -152,7 +152,7 @@ func TestEncodeBands_InvalidCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := EncodeBands(tt.resistance, tt.tolerance)
+			_, err := EncodeBandsSimple(tt.resistance, tt.tolerance)
 			require.Error(t, err)
 		})
 	}
@@ -194,7 +194,7 @@ func TestEncodeDecode_RoundTrip(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			bands, err := EncodeBands(tt.resistance, tt.tolerance)
+			bands, err := EncodeBandsSimple(tt.resistance, tt.tolerance)
 			require.NoError(t, err)
 
 			spec, err := DecodeBands(bands)
@@ -204,4 +204,22 @@ func TestEncodeDecode_RoundTrip(t *testing.T) {
 			require.Equal(t, tt.tolerance, spec.TolerancePct)
 		})
 	}
+}
+
+func TestEncodeBands_SixBand(t *testing.T) {
+
+	spec := ResistorSpec{
+		ResistanceOhms: 1000,
+		TolerancePct:   1,
+		TempCoeffPPM:   100,
+	}
+
+	bands, err := EncodeBands(spec)
+	require.NoError(t, err)
+
+	expected := []Color{
+		Brown, Black, Black, Brown, Brown, Brown,
+	}
+
+	require.Equal(t, expected, bands)
 }

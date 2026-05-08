@@ -218,180 +218,180 @@ func defaultInferenceRules() []InferenceRule {
 		}
 	}
 
-    return []InferenceRule{
+	return []InferenceRule{
 
-        // =================================================
-        // BODY COLOR → TYPE
-        // =================================================
+		// =================================================
+		// BODY COLOR → TYPE
+		// =================================================
 
-        {
-            Name:   "Blue body → Metal film",
-            Weight: 0.7,
-            Apply: func(obs ObservedResistor) (inferenceContribution, bool) {
-                if obs.BodyColor == Blue {
-                    return inferenceContribution{
-                        Spec:       ResistorSpec{Type: MetalFilm},
-                        Assumption: "Blue body assumed metal film",
-                        Weight:     0.7,
-                    }, true
-                }
-                return inferenceContribution{}, false
-            },
-        },
-        {
-            Name:   "Beige/Tan body → Carbon film",
-            Weight: 0.6,
-            Apply: func(obs ObservedResistor) (inferenceContribution, bool) {
-                if obs.BodyColor == Color("beige") || obs.BodyColor == Color("tan") {
-                    return inferenceContribution{
-                        Spec:       ResistorSpec{Type: CarbonFilm},
-                        Assumption: "Beige/tan body assumed carbon film",
-                        Weight:     0.6,
-                    }, true
-                }
-                return inferenceContribution{}, false
-            },
-        },
-        {
-            Name:   "Green body → Metal oxide",
-            Weight: 0.6,
-            Apply: func(obs ObservedResistor) (inferenceContribution, bool) {
-                if obs.BodyColor == Green {
-                    return inferenceContribution{
-                        Spec:       ResistorSpec{Type: ResistorType("metal_oxide")},
-                        Assumption: "Green body assumed metal oxide",
-                        Weight:     0.6,
-                    }, true
-                }
-                return inferenceContribution{}, false
-            },
-        },
+		{
+			Name:   "Blue body → Metal film",
+			Weight: 0.7,
+			Apply: func(obs ObservedResistor) (inferenceContribution, bool) {
+				if obs.BodyColor == Blue {
+					return inferenceContribution{
+						Spec:       ResistorSpec{Type: MetalFilm},
+						Assumption: "Blue body assumed metal film",
+						Weight:     0.7,
+					}, true
+				}
+				return inferenceContribution{}, false
+			},
+		},
+		{
+			Name:   "Beige/Tan body → Carbon film",
+			Weight: 0.6,
+			Apply: func(obs ObservedResistor) (inferenceContribution, bool) {
+				if obs.BodyColor == Color("beige") || obs.BodyColor == Color("tan") {
+					return inferenceContribution{
+						Spec:       ResistorSpec{Type: CarbonFilm},
+						Assumption: "Beige/tan body assumed carbon film",
+						Weight:     0.6,
+					}, true
+				}
+				return inferenceContribution{}, false
+			},
+		},
+		{
+			Name:   "Green body → Metal oxide",
+			Weight: 0.6,
+			Apply: func(obs ObservedResistor) (inferenceContribution, bool) {
+				if obs.BodyColor == Green {
+					return inferenceContribution{
+						Spec:       ResistorSpec{Type: MetalOxide},
+						Assumption: "Green body assumed metal oxide",
+						Weight:     0.6,
+					}, true
+				}
+				return inferenceContribution{}, false
+			},
+		},
 
-        // =================================================
-        // BAND COUNT → TOLERANCE (IF UNKNOWN)
-        // =================================================
+		// =================================================
+		// BAND COUNT → TOLERANCE (IF UNKNOWN)
+		// =================================================
 
-        {
-            Name:   "4 bands → ±5%",
-            Weight: 0.6,
-            Apply: func(obs ObservedResistor) (inferenceContribution, bool) {
-                if len(obs.Bands) == 4 {
-                    return inferenceContribution{
-                        Spec:       ResistorSpec{TolerancePct: 5},
-                        Assumption: "4 bands assumed ±5% tolerance",
-                        Weight:     0.6,
-                    }, true
-                }
-                return inferenceContribution{}, false
-            },
-        },
-        {
-            Name:   "5 bands → ±1%",
-            Weight: 0.6,
-            Apply: func(obs ObservedResistor) (inferenceContribution, bool) {
-                if len(obs.Bands) == 5 {
-                    return inferenceContribution{
-                        Spec:       ResistorSpec{TolerancePct: 1},
-                        Assumption: "5 bands assumed ±1% tolerance",
-                        Weight:     0.6,
-                    }, true
-                }
-                return inferenceContribution{}, false
-            },
-        },
+		{
+			Name:   "4 bands → ±5%",
+			Weight: 0.6,
+			Apply: func(obs ObservedResistor) (inferenceContribution, bool) {
+				if len(obs.Bands) == 4 {
+					return inferenceContribution{
+						Spec:       ResistorSpec{TolerancePct: 5},
+						Assumption: "4 bands assumed ±5% tolerance",
+						Weight:     0.6,
+					}, true
+				}
+				return inferenceContribution{}, false
+			},
+		},
+		{
+			Name:   "5 bands → ±1%",
+			Weight: 0.6,
+			Apply: func(obs ObservedResistor) (inferenceContribution, bool) {
+				if len(obs.Bands) == 5 {
+					return inferenceContribution{
+						Spec:       ResistorSpec{TolerancePct: 1},
+						Assumption: "5 bands assumed ±1% tolerance",
+						Weight:     0.6,
+					}, true
+				}
+				return inferenceContribution{}, false
+			},
+		},
 
-        // =================================================
-        // LENGTH → POWER
-        // =================================================
+		// =================================================
+		// LENGTH → POWER
+		// =================================================
 
-        lengthRule(2, 3, 0.0625, 100, 0.6, "Length 2-3mm assumed 1/16W"),
-        lengthRule(3, 4, 0.125, 150, 0.6, "Length 3-4mm assumed 1/8W"),
-        lengthRule(5, 7, 0.25, 200, 0.7, "Length 5-7mm assumed 1/4W"),
-        lengthRule(8, 10, 0.5, 300, 0.8, "Length 8-10mm assumed 1/2W"),
-        lengthRule(11, 13, 1.0, 500, 0.85, "Length 11-13mm assumed 1W"),
-        lengthRule(15, 18, 2.0, 750, 0.9, "Length 15-18mm assumed 2W"),
+		lengthRule(2, 3, 0.0625, 100, 0.6, "Length 2-3mm assumed 1/16W"),
+		lengthRule(3, 4, 0.125, 150, 0.6, "Length 3-4mm assumed 1/8W"),
+		lengthRule(5, 7, 0.25, 200, 0.7, "Length 5-7mm assumed 1/4W"),
+		lengthRule(8, 10, 0.5, 300, 0.8, "Length 8-10mm assumed 1/2W"),
+		lengthRule(11, 13, 1.0, 500, 0.85, "Length 11-13mm assumed 1W"),
+		lengthRule(15, 18, 2.0, 750, 0.9, "Length 15-18mm assumed 2W"),
 
-        // =================================================
-        // SMD PACKAGE SIZE → POWER
-        // =================================================
+		// =================================================
+		// SMD PACKAGE SIZE → POWER
+		// =================================================
 
-        {
-            Name:   "0402 → 1/16W",
-            Weight: 0.8,
-            Apply: func(obs ObservedResistor) (inferenceContribution, bool) {
-                if obs.Package == SMD0402 {
-                    return inferenceContribution{
-                        Spec:          ResistorSpec{PowerWatts: 0.0625},
-                        VoltageRating: 25,
-                        Assumption:    "0402 package assumed 1/16W rating",
-                        Weight:        0.8,
-                    }, true
-                }
-                return inferenceContribution{}, false
-            },
-        },
-        {
-            Name:   "0603 → 0.1W",
-            Weight: 0.8,
-            Apply: func(obs ObservedResistor) (inferenceContribution, bool) {
-                if obs.Package == SMD0603 {
-                    return inferenceContribution{
-                        Spec:          ResistorSpec{PowerWatts: 0.1},
-                        VoltageRating: 50,
-                        Assumption:    "0603 package assumed 0.1W rating",
-                        Weight:        0.8,
-                    }, true
-                }
-                return inferenceContribution{}, false
-            },
-        },
-        {
-            Name:   "0805 → 0.125W",
-            Weight: 0.8,
-            Apply: func(obs ObservedResistor) (inferenceContribution, bool) {
-                if obs.Package == SMD0805 {
-                    return inferenceContribution{
-                        Spec:          ResistorSpec{PowerWatts: 0.125},
-                        VoltageRating: 100,
-                        Assumption:    "0805 package assumed 0.125W rating",
-                        Weight:        0.8,
-                    }, true
-                }
-                return inferenceContribution{}, false
-            },
-        },
-        {
-            Name:   "1206 → 0.25W",
-            Weight: 0.85,
-            Apply: func(obs ObservedResistor) (inferenceContribution, bool) {
-                if obs.Package == SMD1206 {
-                    return inferenceContribution{
-                        Spec:          ResistorSpec{PowerWatts: 0.25},
-                        VoltageRating: 200,
-                        Assumption:    "1206 package assumed 0.25W rating",
-                        Weight:        0.85,
-                    }, true
-                }
-                return inferenceContribution{}, false
-            },
-        },
+		{
+			Name:   "0402 → 1/16W",
+			Weight: 0.8,
+			Apply: func(obs ObservedResistor) (inferenceContribution, bool) {
+				if obs.Package == SMD0402 {
+					return inferenceContribution{
+						Spec:          ResistorSpec{PowerWatts: 0.0625},
+						VoltageRating: 25,
+						Assumption:    "0402 package assumed 1/16W rating",
+						Weight:        0.8,
+					}, true
+				}
+				return inferenceContribution{}, false
+			},
+		},
+		{
+			Name:   "0603 → 0.1W",
+			Weight: 0.8,
+			Apply: func(obs ObservedResistor) (inferenceContribution, bool) {
+				if obs.Package == SMD0603 {
+					return inferenceContribution{
+						Spec:          ResistorSpec{PowerWatts: 0.1},
+						VoltageRating: 50,
+						Assumption:    "0603 package assumed 0.1W rating",
+						Weight:        0.8,
+					}, true
+				}
+				return inferenceContribution{}, false
+			},
+		},
+		{
+			Name:   "0805 → 0.125W",
+			Weight: 0.8,
+			Apply: func(obs ObservedResistor) (inferenceContribution, bool) {
+				if obs.Package == SMD0805 {
+					return inferenceContribution{
+						Spec:          ResistorSpec{PowerWatts: 0.125},
+						VoltageRating: 100,
+						Assumption:    "0805 package assumed 0.125W rating",
+						Weight:        0.8,
+					}, true
+				}
+				return inferenceContribution{}, false
+			},
+		},
+		{
+			Name:   "1206 → 0.25W",
+			Weight: 0.85,
+			Apply: func(obs ObservedResistor) (inferenceContribution, bool) {
+				if obs.Package == SMD1206 {
+					return inferenceContribution{
+						Spec:          ResistorSpec{PowerWatts: 0.25},
+						VoltageRating: 200,
+						Assumption:    "1206 package assumed 0.25W rating",
+						Weight:        0.85,
+					}, true
+				}
+				return inferenceContribution{}, false
+			},
+		},
 
-        // =================================================
-        // CROSS-SIGNAL REINFORCEMENT
-        // =================================================
+		// =================================================
+		// CROSS-SIGNAL REINFORCEMENT
+		// =================================================
 
-        {
-            Name:   "Blue + 5 band reinforcement",
-            Weight: 0.2,
-            Apply: func(obs ObservedResistor) (inferenceContribution, bool) {
-                if obs.BodyColor == Blue && len(obs.Bands) == 5 {
-                    return inferenceContribution{
-                        Assumption: "Blue body + 5 bands reinforced precision metal film assumption",
-                        Weight:     0.2,
-                    }, true
-                }
-                return inferenceContribution{}, false
-            },
-        },
-    }
+		{
+			Name:   "Blue + 5 band reinforcement",
+			Weight: 0.2,
+			Apply: func(obs ObservedResistor) (inferenceContribution, bool) {
+				if obs.BodyColor == Blue && len(obs.Bands) == 5 {
+					return inferenceContribution{
+						Assumption: "Blue body + 5 bands reinforced precision metal film assumption",
+						Weight:     0.2,
+					}, true
+				}
+				return inferenceContribution{}, false
+			},
+		},
+	}
 }

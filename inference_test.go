@@ -160,22 +160,22 @@ func TestInferResistor_EmptyObservation(t *testing.T) {
 
 func TestInferResistor_6BandDeterministic(t *testing.T) {
 
-    // Brown Black Red Brown Brown Brown
-    // 1kΩ ±1% 100ppm
-    obs := ObservedResistor{
-        Bands: []Color{
-            Brown, Black, Black, Brown, Brown, Brown,
-        },
-    }
+	// Brown Black Red Brown Brown Brown
+	// 1kΩ ±1% 100ppm
+	obs := ObservedResistor{
+		Bands: []Color{
+			Brown, Black, Black, Brown, Brown, Brown,
+		},
+	}
 
-    res, err := InferResistor(obs)
-    require.NoError(t, err)
+	res, err := InferResistor(obs)
+	require.NoError(t, err)
 
-    require.Equal(t, 1000.0, res.Spec.ResistanceOhms)
-    require.Equal(t, 1.0, res.Spec.TolerancePct)
-    require.Equal(t, 100, res.Spec.TempCoeffPPM)
+	require.Equal(t, 1000.0, res.Spec.ResistanceOhms)
+	require.Equal(t, 1.0, res.Spec.TolerancePct)
+	require.Equal(t, 100, res.Spec.TempCoeffPPM)
 
-    require.InDelta(t, 1.0, res.Meta.Confidence, 1e-9)
+	require.InDelta(t, 1.0, res.Meta.Confidence, 1e-9)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -184,30 +184,30 @@ func TestInferResistor_6BandDeterministic(t *testing.T) {
 
 func TestInferResistor_BodyColorRules(t *testing.T) {
 
-    tests := []struct {
-        name     string
-        color    Color
-        expected ResistorType
-    }{
-        {"Blue → MetalFilm", Blue, MetalFilm},
-        {"Beige → CarbonFilm", Color("beige"), CarbonFilm},
-        {"Green → MetalOxide", Green, ResistorType("metal_oxide")},
-    }
+	tests := []struct {
+		name     string
+		color    Color
+		expected ResistorType
+	}{
+		{"Blue → MetalFilm", Blue, MetalFilm},
+		{"Beige → CarbonFilm", Color("beige"), CarbonFilm},
+		{"Green → MetalOxide", Green, ResistorType("metal_oxide")},
+	}
 
-    for _, tt := range tests {
-        t.Run(tt.name, func(t *testing.T) {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
 
-            obs := ObservedResistor{
-                BodyColor: tt.color,
-            }
+			obs := ObservedResistor{
+				BodyColor: tt.color,
+			}
 
-            res, err := InferResistor(obs)
-            require.NoError(t, err)
+			res, err := InferResistor(obs)
+			require.NoError(t, err)
 
-            require.Equal(t, tt.expected, res.Spec.Type)
-            require.True(t, res.Meta.Confidence > 0)
-        })
-    }
+			require.Equal(t, tt.expected, res.Spec.Type)
+			require.True(t, res.Meta.Confidence > 0)
+		})
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -216,31 +216,31 @@ func TestInferResistor_BodyColorRules(t *testing.T) {
 
 func TestInferResistor_LengthPowerTiers(t *testing.T) {
 
-    tests := []struct {
-        length   float64
-        expected float64
-    }{
-        {2.5, 0.0625},
-        {3.5, 0.125},
-        {6.0, 0.25},
-        {9.0, 0.5},
-        {12.0, 1.0},
-        {16.0, 2.0},
-    }
+	tests := []struct {
+		length   float64
+		expected float64
+	}{
+		{2.5, 0.0625},
+		{3.5, 0.125},
+		{6.0, 0.25},
+		{9.0, 0.5},
+		{12.0, 1.0},
+		{16.0, 2.0},
+	}
 
-    for _, tt := range tests {
-        t.Run("Length tier", func(t *testing.T) {
+	for _, tt := range tests {
+		t.Run("Length tier", func(t *testing.T) {
 
-            obs := ObservedResistor{
-                LengthMM: tt.length,
-            }
+			obs := ObservedResistor{
+				LengthMM: tt.length,
+			}
 
-            res, err := InferResistor(obs)
-            require.NoError(t, err)
+			res, err := InferResistor(obs)
+			require.NoError(t, err)
 
-            require.Equal(t, tt.expected, res.Spec.PowerWatts)
-        })
-    }
+			require.Equal(t, tt.expected, res.Spec.PowerWatts)
+		})
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -249,29 +249,29 @@ func TestInferResistor_LengthPowerTiers(t *testing.T) {
 
 func TestInferResistor_SMDPackagePower(t *testing.T) {
 
-    tests := []struct {
-        pkg      PackageType
-        expected float64
-    }{
-        {SMD0402, 0.0625},
-        {SMD0603, 0.1},
-        {SMD0805, 0.125},
-        {SMD1206, 0.25},
-    }
+	tests := []struct {
+		pkg      PackageType
+		expected float64
+	}{
+		{SMD0402, 0.0625},
+		{SMD0603, 0.1},
+		{SMD0805, 0.125},
+		{SMD1206, 0.25},
+	}
 
-    for _, tt := range tests {
-        t.Run("SMD tier", func(t *testing.T) {
+	for _, tt := range tests {
+		t.Run("SMD tier", func(t *testing.T) {
 
-            obs := ObservedResistor{
-                Package: tt.pkg,
-            }
+			obs := ObservedResistor{
+				Package: tt.pkg,
+			}
 
-            res, err := InferResistor(obs)
-            require.NoError(t, err)
+			res, err := InferResistor(obs)
+			require.NoError(t, err)
 
-            require.Equal(t, tt.expected, res.Spec.PowerWatts)
-        })
-    }
+			require.Equal(t, tt.expected, res.Spec.PowerWatts)
+		})
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -280,18 +280,18 @@ func TestInferResistor_SMDPackagePower(t *testing.T) {
 
 func TestInferResistor_Reinforcement(t *testing.T) {
 
-    baseObs := ObservedResistor{
-        BodyColor: Blue,
-    }
+	baseObs := ObservedResistor{
+		BodyColor: Blue,
+	}
 
-    reinforcedObs := ObservedResistor{
-        BodyColor: Blue,
-        Bands:     []Color{Brown, Black, Red, Brown, Brown}, // 5-band
-    }
+	reinforcedObs := ObservedResistor{
+		BodyColor: Blue,
+		Bands:     []Color{Brown, Black, Red, Brown, Brown}, // 5-band
+	}
 
-    baseRes, _ := InferResistor(baseObs)
-    reinforcedRes, _ := InferResistor(reinforcedObs)
+	baseRes, _ := InferResistor(baseObs)
+	reinforcedRes, _ := InferResistor(reinforcedObs)
 
-    require.True(t,
-        reinforcedRes.Meta.Confidence >= baseRes.Meta.Confidence)
+	require.True(t,
+		reinforcedRes.Meta.Confidence >= baseRes.Meta.Confidence)
 }
