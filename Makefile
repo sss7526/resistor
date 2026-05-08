@@ -4,6 +4,8 @@
 
 # Package name (auto-detect)
 PKG := ./...
+CLI := resistor-cli
+CLI_PATH := ./cmd/resistor-cli
 
 # Default fuzz time (override via: make fuzz FUZZTIME=30s)
 FUZZTIME ?= 10s
@@ -13,7 +15,7 @@ FUZZTIME ?= 10s
 # ---------------------------------------
 
 .PHONY: all
-all: fmt test
+all: fmt test build
 
 # Format code
 .PHONY: fmt
@@ -32,6 +34,20 @@ test:
 test-short:
 	@echo "→ Running short unit tests"
 	go test -short -v $(PKG)
+
+# ---------------------------------------
+# CLI Build Targets
+# ---------------------------------------
+
+.PHONY: build
+build:
+	@echo "→ Building CLI binary"
+	go build -o $(CLI) $(CLI_PATH)
+
+.PHONY: install
+install:
+	@echo "→ Installing CLI"
+	go install $(CLI_PATH)
 
 # ---------------------------------------
 # Unit Test Subsets
@@ -92,6 +108,7 @@ clean:
 	@echo "→ Cleaning fuzz cache"
 	go clean -testcache
 	rm -rf testdata/fuzz
+	rm -f $(CLI)
 
 # ---------------------------------------
 # Help
@@ -102,6 +119,8 @@ help:
 	@echo ""
 	@echo "Available targets:"
 	@echo "  make fmt            - Run go fmt"
+	@echo "  make build          - Build CLI binary"
+	@echo "  make install        - Install CLI to GOPATH/bin"
 	@echo "  make test           - Run all unit tests"
 	@echo "  make test-short     - Run short tests"
 	@echo "  make test-bands     - Run band tests only"
@@ -114,5 +133,5 @@ help:
 	@echo "  make fuzz-bands     - Fuzz DecodeBands"
 	@echo "  make fuzz-smd       - Fuzz DecodeSMD"
 	@echo "  make fuzz-series    - Fuzz NearestStandard"
-	@echo "  make clean          - Clean test cache & fuzz artifacts"
+	@echo "  make clean          - Clean binary & test cache & fuzz artifacts"
 	@echo ""
