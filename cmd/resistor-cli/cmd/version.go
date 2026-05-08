@@ -5,11 +5,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var version = "v0.1.0"
+var version = "dev"
 
 var versionCmd = &cobra.Command{
-	Use: "version",
+	Use:   "version",
 	Short: "Print CLI version",
+	Example: `
+  # Print CLI version
+  resistor-cli version
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println(version)
 	},

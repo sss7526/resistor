@@ -6,6 +6,7 @@
 PKG := ./...
 CLI := resistor-cli
 CLI_PATH := ./cmd/resistor-cli
+VERSION := v0.1.0
 
 # Default fuzz time (override via: make fuzz FUZZTIME=30s)
 FUZZTIME ?= 10s
@@ -35,6 +36,21 @@ test-short:
 	@echo "→ Running short unit tests"
 	go test -short -v $(PKG)
 
+.PHONY: test-cli
+test-cli: build
+	go test ./cmd/resistor-cli -v
+
+.PHONY: test-all
+test-all: test test-cli
+
+.PHONY: smoke
+smoke: build
+	./$(CLI) select 487 > /dev/null
+	./$(CLI) infer --bands brown,black,red,gold > /dev/null
+	./$(CLI) analyze --r 100 --v 10 > /dev/null
+	./$(CLI) smd decode 472 > /dev/null
+	@echo "Smoke tests passed"
+
 # ---------------------------------------
 # CLI Build Targets
 # ---------------------------------------
@@ -42,7 +58,7 @@ test-short:
 .PHONY: build
 build:
 	@echo "→ Building CLI binary"
-	go build -o $(CLI) $(CLI_PATH)
+	go build -o $(CLI) -ldflags "-X 'github.com/sss7526/resistor/cmd/resistor-cli/cmd.version=$(VERSION)'" $(CLI_PATH)
 
 .PHONY: install
 install:

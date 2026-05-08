@@ -1,13 +1,13 @@
 package main
 
 import (
-    "os"
+	"os"
 
-    "github.com/sss7526/resistor/cmd/resistor-cli/cmd"
+	"github.com/sss7526/resistor/cmd/resistor-cli/cmd"
 )
 
 func main() {
-    if err := cmd.Execute(); err != nil {
-        os.Exit(1)
-    }
+	if err := cmd.Execute(); err != nil {
+		os.Exit(1)
+	}
 }
