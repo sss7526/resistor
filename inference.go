@@ -96,8 +96,7 @@ func InferResistor(obs ObservedResistor) (InferenceResult, error) {
     var result InferenceResult
     var assumptions []string
 
-    var totalWeight float64
-    var weightedScore float64
+    confidence := 0.0
 
     // ---------------------------------------------------------
     // 1. Deterministic Extraction
@@ -107,25 +106,29 @@ func InferResistor(obs ObservedResistor) (InferenceResult, error) {
     if len(obs.Bands) == 4 || len(obs.Bands) == 5 {
         spec, err := DecodeBands(obs.Bands)
         if err == nil {
+
             result.Spec.ResistanceOhms = spec.ResistanceOhms
             result.Spec.TolerancePct = spec.TolerancePct
 
-            assumptions = append(assumptions, "Resistance and tolerance determined from color bands")
+            assumptions = append(assumptions,
+                "Resistance and tolerance determined from color bands")
 
-            totalWeight += 1.0
-            weightedScore += 1.0
+            // Deterministic fact → weight = 1.0
+            confidence = 1 - (1-confidence)*(1-1.0)
         }
     }
 
-    // Decode SMD marking
+    // Decode SMD marking (only if resistance still unknown)
     if obs.Marking != "" && result.Spec.ResistanceOhms == 0 {
         spec, err := DecodeSMD(obs.Marking)
         if err == nil {
-            result.Spec.ResistanceOhms = spec.ResistanceOhms
-            assumptions = append(assumptions, "Resistance determined from SMD marking")
 
-            totalWeight += 1.0
-            weightedScore += 1.0
+            result.Spec.ResistanceOhms = spec.ResistanceOhms
+
+            assumptions = append(assumptions,
+                "Resistance determined from SMD marking")
+
+            confidence = 1 - (1-confidence)*(1-1.0)
         }
     }
 
@@ -142,38 +145,48 @@ func InferResistor(obs ObservedResistor) (InferenceResult, error) {
             continue
         }
 
-        // Apply inferred properties only if not already known
+        appliedEffectively := false
+
+        // Only apply if field not already known
         if result.Spec.Type == "" && contrib.Spec.Type != "" {
             result.Spec.Type = contrib.Spec.Type
+            appliedEffectively = true
         }
 
         if result.Spec.PowerWatts == 0 && contrib.Spec.PowerWatts != 0 {
             result.Spec.PowerWatts = contrib.Spec.PowerWatts
+            appliedEffectively = true
         }
 
         if result.VoltageRating == 0 && contrib.VoltageRating != 0 {
             result.VoltageRating = contrib.VoltageRating
+            appliedEffectively = true
+        }
+
+        if result.Spec.TolerancePct == 0 && contrib.Spec.TolerancePct != 0 {
+            result.Spec.TolerancePct = contrib.Spec.TolerancePct
+            appliedEffectively = true
+        }
+
+        // If rule did not actually modify state, ignore it
+        if !appliedEffectively {
+            continue
         }
 
         if contrib.Assumption != "" {
             assumptions = append(assumptions, contrib.Assumption)
         }
 
-        totalWeight += rule.Weight
-        weightedScore += rule.Weight * rule.Weight
+        // Monotonic confidence accumulation
+        confidence = 1 - (1-confidence)*(1-rule.Weight)
     }
 
     // ---------------------------------------------------------
-    // 3. Confidence Aggregation
+    // 3. Finalize
     // ---------------------------------------------------------
-
-    if totalWeight > 0 {
-        result.Meta.Confidence = weightedScore / totalWeight
-    } else {
-        result.Meta.Confidence = 0
-    }
 
     result.Meta.Assumptions = assumptions
+    result.Meta.Confidence = confidence
 
     return result, nil
 }
