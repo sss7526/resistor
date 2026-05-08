@@ -227,29 +227,19 @@ func decodeEIA96(m string) (float64, error) {
 
 func encodeEIA96(resistance float64) (string, error) {
 
-	// Normalize to decade
-	exponent := math.Floor(math.Log10(resistance))
-	normalized := resistance / math.Pow(10, exponent)
+    for letter, multiplier := range eia96Multipliers {
 
-	// Find closest E96 base
-	index := -1
-	for i, v := range eia96Base {
-		if math.Abs(v-normalized) < 1e-6 {
-			index = i
-			break
-		}
-	}
+        base := resistance / multiplier
 
-	if index == -1 {
-		return "", fmt.Errorf("value not representable in EIA-96 series")
-	}
+        for i, v := range eia96Base {
 
-	multChar, ok := findEIA96Multiplier(math.Pow(10, exponent))
-	if !ok {
-		return "", fmt.Errorf("no valid EIA-96 multiplier")
-	}
+            if math.Abs(v-base) < 1e-6 {
+                return fmt.Sprintf("%02d%c", i+1, letter), nil
+            }
+        }
+    }
 
-	return fmt.Sprintf("%02d%c", index + 1, multChar), nil
+    return "", fmt.Errorf("value not representable in EIA‑96 series")
 }
 
 func findEIA96Multiplier(mult float64) (rune, bool) {
@@ -267,20 +257,27 @@ func findEIA96Multiplier(mult float64) (rune, bool) {
 
 func encodeStandardSMD(resistance float64) (string, error) {
 
-	for exp := -2; exp <= 9; exp++ {
+    // Try 3-digit first
+    for exp := 0; exp <= 9; exp++ {
 
-		scaled := resistance / math.Pow(10, float64(exp))
+        scaled := resistance / math.Pow(10, float64(exp))
 
-		if scaled >= 10 && scaled < 100 && math.Mod(scaled, 1) == 0 {
-			return fmt.Sprintf("%02d%d", int(scaled), exp), nil
-		}
+        if scaled >= 10 && scaled < 100 && math.Mod(scaled, 1) == 0 {
+            return fmt.Sprintf("%02d%d", int(scaled), exp), nil
+        }
+    }
 
-		if scaled >= 100 && scaled < 1000 && math.Mod(scaled, 1) == 0 {
-			return fmt.Sprintf("%03d%d", int(scaled), exp), nil
-		}
-	}
+    // Then try 4-digit
+    for exp := 0; exp <= 9; exp++ {
 
-	return "", fmt.Errorf("value not representable in 3/4-digit SMD format")
+        scaled := resistance / math.Pow(10, float64(exp))
+
+        if scaled >= 100 && scaled < 1000 && math.Mod(scaled, 1) == 0 {
+            return fmt.Sprintf("%03d%d", int(scaled), exp), nil
+        }
+    }
+
+    return "", fmt.Errorf("value not representable in 3/4-digit SMD format")
 }
 
 ///////////////////////////////////////////////////////////////////////////////
