@@ -40,29 +40,29 @@ func splitAndTrim(s string) []string {
 
 func FuzzDecodeSMD(f *testing.F) {
 
-    // Seed valid examples
-    f.Add("472")
-    f.Add("4701")
-    f.Add("4R7")
-    f.Add("01C")
+	// Seed valid examples
+	f.Add("472")
+	f.Add("4701")
+	f.Add("4R7")
+	f.Add("01C")
 
-    f.Fuzz(func(t *testing.T, input string) {
-        _, _ = DecodeSMD(input)
-    })
+	f.Fuzz(func(t *testing.T, input string) {
+		_, _ = DecodeSMD(input)
+	})
 }
 
 func FuzzNearestStandard(f *testing.F) {
 
-    f.Add(100.0)
-    f.Add(4700.0)
-    f.Add(1.0)
+	f.Add(100.0)
+	f.Add(4700.0)
+	f.Add(1.0)
 
-    f.Fuzz(func(t *testing.T, val float64) {
+	f.Fuzz(func(t *testing.T, val float64) {
 
-        if val <= 0 || val > 1e9 {
-            return
-        }
+		if val <= 0 || val > 1e9 {
+			return
+		}
 
-        _, _ = NearestStandard(val, E24, RoundNearest)
-    })
+		_, _ = NearestStandard(val, E24, RoundNearest)
+	})
 }
