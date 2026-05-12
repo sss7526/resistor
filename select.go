@@ -105,8 +105,13 @@ func SelectStandardResistor(req SelectionRequest) (SelectionResult, error) {
 
 	tolerance := req.TolerancePct
 	if tolerance == 0 {
-		tolerance = 5.0
-		assumptions = append(assumptions, "Tolerance defaulted to ±5%")
+		if series >= E48 {
+			tolerance = 1.0
+			assumptions = append(assumptions, "Tolerance defaulted to ±1% for precision series")
+		} else {
+			tolerance = 5.0
+			assumptions = append(assumptions, "Tolerance defaulted to ±5%")
+		}
 	}
 
 	rounding := req.Rounding
