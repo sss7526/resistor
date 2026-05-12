@@ -82,17 +82,34 @@ func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
+	prev := m.current
 	next, cmd := m.current.Update(msg)
 
-	// Always replace current view
-	m.current = next
+	// // Always replace current view
+	// m.current = next
 
-	// Always resize after view replacement
-	if m.width > 0 && m.height > 0 {
-		if r, ok := m.current.(Resizable); ok {
-			r.Resize(m.width, m.height)
-		}
-	}
+	// // Always resize after view replacement
+	// if m.width > 0 && m.height > 0 {
+	// 	if r, ok := m.current.(Resizable); ok {
+	// 		r.Resize(m.width, m.height)
+	// 	}
+	// }
+
+	// If view instance changed, run its Init()
+    if next != prev {
+        m.current = next
+
+        initCmd := m.current.Init()
+
+        // Immediately resize new view
+        if r, ok := m.current.(Resizable); ok {
+            r.Resize(m.width, m.height)
+        }
+
+        return m, tea.Batch(cmd, initCmd)
+    }
+
+    m.current = next
 
 	return m, cmd
 }

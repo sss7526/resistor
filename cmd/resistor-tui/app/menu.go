@@ -83,7 +83,7 @@ func (m *MenuView) Update(msg tea.Msg) (View, tea.Cmd) {
 		case "enter":
 			switch m.list.Index() {
 			case 0:
-				return NewPlaceholderView("Select View (not yet implemented)"), nil
+				return NewSelectView(), nil
 			case 1:
 				return NewPlaceholderView("Infer View (not yet implemented)"), nil
 			case 2:
