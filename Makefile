@@ -6,6 +6,8 @@
 PKG := ./...
 CLI := resistor-cli
 CLI_PATH := ./cmd/resistor-cli
+TUI := resistor-tui
+TUI_PATH := ./cmd/resistor-tui
 VERSION := v0.1.0
 
 # Default fuzz time (override via: make fuzz FUZZTIME=30s)
@@ -55,15 +57,29 @@ smoke: build
 # CLI Build Targets
 # ---------------------------------------
 
-.PHONY: build
-build:
+.PHONY: build-cli
+build-cli:
 	@echo "→ Building CLI binary"
 	go build -o $(CLI) -ldflags "-X 'github.com/sss7526/resistor/cmd/resistor-cli/cmd.version=$(VERSION)'" $(CLI_PATH)
 
-.PHONY: install
-install:
+.PHONY: install-cli
+install-cli:
 	@echo "→ Installing CLI"
 	go install $(CLI_PATH)
+
+# ---------------------------------------
+# TUI Build Targets
+# ---------------------------------------
+
+.PHONY: build-tui
+build-tui:
+	@echo "→ Building TUI binary"
+	go build -o $(TUI) -ldflags "-X 'github.com/sss7526/resistor/cmd/resistor-tui/app.version=$(VERSION)'" $(TUI_PATH)
+
+.PHONY: install-tui
+install-tui:
+	@echo "→ Installing TUI"
+	go install $(TUI_PATH)
 
 # ---------------------------------------
 # Unit Test Subsets
@@ -135,7 +151,8 @@ help:
 	@echo ""
 	@echo "Available targets:"
 	@echo "  make fmt            - Run go fmt"
-	@echo "  make build          - Build CLI binary"
+	@echo "  make build-cli      - Build CLI binary"
+	@echo "  make build-tui      - Build TUI binary"
 	@echo "  make install        - Install CLI to GOPATH/bin"
 	@echo "  make test           - Run all unit tests"
 	@echo "  make test-short     - Run short tests"
