@@ -7,6 +7,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/bubbles/viewport"
 
 	"github.com/sss7526/resistor"
 )
@@ -17,6 +18,8 @@ type InferView struct {
 	form          *huh.Form
 	coreGroup     *huh.Group
 	physicalGroup *huh.Group
+
+	viewport viewport.Model
 
 	// Mode + structural state
 	mode          string
@@ -47,7 +50,7 @@ func NewInferView() *InferView {
 		bandCount: 4,
 		bands:     make([]resistor.Color, 6),
 	}
-
+	v.viewport = viewport.New(0,0)
 	v.buildForm()
 
 	return v
@@ -58,7 +61,13 @@ func NewInferView() *InferView {
 ///////////////////////////////////////////////////////////////////////////////
 
 func (v *InferView) Resize(width, height int) {
-	v.BaseView.Resize(width, height)
+    v.BaseView.Resize(width, height)
+
+    totalWidth := width
+    formWidth := totalWidth / 2
+
+    v.viewport.Width = formWidth
+    v.viewport.Height = height - 4
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -75,77 +84,79 @@ func (v *InferView) Init() tea.Cmd {
 
 func (v *InferView) buildForm() {
 
-	v.prevMode = v.mode
-	v.prevBandCount = v.bandCount
+    v.prevMode = v.mode
+    v.prevBandCount = v.bandCount
 
-	var coreFields []huh.Field
+    // ----- Physical Group (Left Column) -----
+    v.physicalGroup = huh.NewGroup(
+        huh.NewSelect[string]().
+            Title("Input Mode").
+            Options(
+                huh.NewOption("Bands", "Bands"),
+                huh.NewOption("SMD", "SMD"),
+            ).
+            Value(&v.mode),
 
-	// Mode selector
-	coreFields = append(coreFields,
-		huh.NewSelect[string]().
-			Title("Input Mode").
-			Options(
-				huh.NewOption("Bands", "Bands"),
-				huh.NewOption("SMD", "SMD"),
-			).
-			Value(&v.mode),
-	)
+        huh.NewSelect[resistor.Color]().
+            Title("Body Color").
+            Options(enumOptions(resistor.BodyColors())...).
+            Value(&v.bodyColor),
 
-	if v.mode == "Bands" {
+        huh.NewInput().
+            Title("Length (mm)").
+            Value(&v.length),
 
-		coreFields = append(coreFields,
-			huh.NewSelect[int]().
-				Title("Band Count").
-				Options(
-					huh.NewOption("4", 4),
-					huh.NewOption("5", 5),
-					huh.NewOption("6", 6),
-				).
-				Value(&v.bandCount),
-		)
+        huh.NewSelect[resistor.PackageType]().
+            Title("Package").
+            Options(enumOptions(resistor.AllPackageTypes())...).
+            Value(&v.pkg),
+    )
 
-		roles, _ := resistor.BandRolesForCount(v.bandCount)
+    // ----- Band Group (Right Column) -----
+    var bandFields []huh.Field
 
-		for i, role := range roles {
+    if v.mode == "Bands" {
 
-			validColors := resistor.ValidColorsForRole(role)
+        bandFields = append(bandFields,
+            huh.NewSelect[int]().
+                Title("Band Count").
+                Options(
+                    huh.NewOption("4", 4),
+                    huh.NewOption("5", 5),
+                    huh.NewOption("6", 6),
+                ).
+                Value(&v.bandCount),
+        )
 
-			coreFields = append(coreFields,
-				huh.NewSelect[resistor.Color]().
-					Title(fmt.Sprintf("Band %d (%s)", i+1, role.String())).
-					Options(enumOptions(validColors)...).
-					Value(&v.bands[i]),
-			)
-		}
+        roles, _ := resistor.BandRolesForCount(v.bandCount)
 
-	} else {
+        for i, role := range roles {
 
-		coreFields = append(coreFields,
-			huh.NewInput().
-				Title("SMD Marking").
-				Value(&v.smd),
-		)
-	}
+            validColors := resistor.ValidColorsForRole(role)
 
-	v.coreGroup = huh.NewGroup(coreFields...)
+            bandFields = append(bandFields,
+                huh.NewSelect[resistor.Color]().
+                    Title(fmt.Sprintf("Band %d (%s)", i+1, role.String())).
+                    Options(enumOptions(validColors)...).
+                    Value(&v.bands[i]),
+            )
+        }
 
-	v.physicalGroup = huh.NewGroup(
-		huh.NewSelect[resistor.Color]().
-			Title("Body Color").
-			Options(enumOptions(resistor.BodyColors())...).
-			Value(&v.bodyColor),
+    } else {
 
-		huh.NewInput().
-			Title("Length (mm)").
-			Value(&v.length),
+        bandFields = append(bandFields,
+            huh.NewInput().
+                Title("SMD Marking").
+                Value(&v.smd),
+        )
+    }
 
-		huh.NewSelect[resistor.PackageType]().
-			Title("Package").
-			Options(enumOptions(resistor.AllPackageTypes())...).
-			Value(&v.pkg),
-	)
+    v.coreGroup = huh.NewGroup(bandFields...)
 
-	v.form = huh.NewForm(v.coreGroup, v.physicalGroup)
+    v.form = huh.NewForm(
+        v.physicalGroup,
+        v.coreGroup,
+    )
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -164,6 +175,8 @@ func (v *InferView) Update(msg tea.Msg) (View, tea.Cmd) {
 
 	updated, cmd := v.form.Update(msg)
 	v.form = updated.(*huh.Form)
+
+	v.viewport, _ = v.viewport.Update(msg)
 
 	// Structural change detection
 	if v.mode != v.prevMode || v.bandCount != v.prevBandCount {
@@ -218,43 +231,44 @@ func (v *InferView) computeResult() {
 
 func (v *InferView) View() string {
 
-	if v.width <= 0 {
-		return ""
-	}
+    if v.width <= 0 {
+        return ""
+    }
 
-	totalWidth := v.width
-	formWidth := totalWidth / 2
-	resultWidth := totalWidth - formWidth - 2
+    totalWidth := v.width
+    formWidth := totalWidth / 2
+    resultWidth := totalWidth - formWidth - 2
 
-	// Split form into two columns
-	leftWidth := formWidth / 2
-	rightWidth := formWidth - leftWidth - 2
+    leftWidth := formWidth / 2
+    rightWidth := formWidth - leftWidth - 2
 
-	corePanel := lipgloss.NewStyle().
-		Width(leftWidth).
-		Render(v.coreGroup.View())
+    leftPanel := lipgloss.NewStyle().
+        Width(leftWidth).
+        Render(v.physicalGroup.View())
 
-	physicalPanel := lipgloss.NewStyle().
-		Width(rightWidth).
-		Render(v.physicalGroup.View())
+    rightPanel := lipgloss.NewStyle().
+        Width(rightWidth).
+        Render(v.coreGroup.View())
 
-	formSplit := lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		corePanel,
-		"  ",
-		physicalPanel,
-	)
+    formCombined := lipgloss.JoinHorizontal(
+        lipgloss.Top,
+        leftPanel,
+        "  ",
+        rightPanel,
+    )
 
-	resultPanel := lipgloss.NewStyle().
-		Width(resultWidth).
-		Render(v.renderResult())
+    v.viewport.SetContent(formCombined)
 
-	return lipgloss.JoinHorizontal(
-		lipgloss.Top,
-		formSplit,
-		"  ",
-		resultPanel,
-	)
+    resultPanel := lipgloss.NewStyle().
+        Width(resultWidth).
+        Render(v.renderResult())
+
+    return lipgloss.JoinHorizontal(
+        lipgloss.Top,
+        v.viewport.View(),
+        "  ",
+        resultPanel,
+    )
 }
 
 ///////////////////////////////////////////////////////////////////////////////
