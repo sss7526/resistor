@@ -45,13 +45,13 @@ type SelectView struct {
 
 	// Bound variables
 	resistance string
-	tolerance string
-	series resistor.ESeries
-	rounding resistor.RoundingMode
+	tolerance  string
+	series     resistor.ESeries
+	rounding   resistor.RoundingMode
 
 	// Computed result
 	result resistor.SelectionResult
-	err error
+	err    error
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -74,7 +74,7 @@ func NewSelectView() *SelectView {
 			huh.NewInput().
 				Title("Tolerance (%)").
 				Value(&v.tolerance),
-				
+
 			huh.NewSelect[resistor.ESeries]().
 				Title("E-Series").
 				Options(enumOptions(resistor.AllESeries())...).
@@ -94,7 +94,7 @@ func NewSelectView() *SelectView {
 // Resize
 ///////////////////////////////////////////////////////////////////////////////
 
-func(v *SelectView) Resize(width, height int) {
+func (v *SelectView) Resize(width, height int) {
 	v.BaseView.Resize(width, height)
 }
 
@@ -114,7 +114,7 @@ func (v *SelectView) Update(msg tea.Msg) (View, tea.Cmd) {
 	switch msg := msg.(type) {
 
 	case tea.KeyMsg:
-	
+
 		if msg.String() == "esc" {
 			return NewMenu(), nil
 		}
@@ -135,7 +135,7 @@ func (v *SelectView) Update(msg tea.Msg) (View, tea.Cmd) {
 ///////////////////////////////////////////////////////////////////////////////
 
 func (v *SelectView) computeResult() {
-	
+
 	if v.resistance == "" {
 		v.err = nil
 		return
@@ -153,10 +153,10 @@ func (v *SelectView) computeResult() {
 	}
 
 	req := resistor.SelectionRequest{
-		Resistance: value,
+		Resistance:   value,
 		TolerancePct: tol,
-		Series: v.series,
-		Rounding: v.rounding,
+		Series:       v.series,
+		Rounding:     v.rounding,
 	}
 
 	result, err := resistor.SelectStandardResistor(req)
@@ -173,7 +173,7 @@ func (v *SelectView) computeResult() {
 ///////////////////////////////////////////////////////////////////////////////
 
 func (v *SelectView) View() string {
-	
+
 	formView := v.form.View()
 
 	resultView := ""
@@ -203,9 +203,9 @@ func (v *SelectView) View() string {
 // Helpers
 ///////////////////////////////////////////////////////////////////////////////
 
-func enumOptions[T interface { 
-	fmt.Stringer 
-	comparable 
+func enumOptions[T interface {
+	fmt.Stringer
+	comparable
 }](values []T) []huh.Option[T] {
 
 	opts := make([]huh.Option[T], len(values))
