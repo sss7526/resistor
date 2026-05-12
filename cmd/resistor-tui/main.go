@@ -1,8 +1,8 @@
 package main
 
 import (
-	"log"
 	tea "github.com/charmbracelet/bubbletea"
+	"log"
 
 	"github.com/sss7526/resistor/cmd/resistor-tui/app"
 )

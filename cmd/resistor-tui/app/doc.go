@@ -1,7 +1,7 @@
 // Package app implements the Bubble Tea application layer for the
 // interactive resistor TUI.
 //
-// Architecture Overview
+// # Architecture Overview
 //
 // The TUI is structured around a dynamic view-router pattern.
 // Each screen implements the View interface and is fully autonomous.
@@ -33,7 +33,7 @@
 //   - Handles its own key events (except global quit)
 //   - Implements Resizable if it depends on terminal dimensions
 //
-// Resize Strategy
+// # Resize Strategy
 //
 // The AppModel stores the latest terminal width and height.
 // When a WindowSizeMsg is received, the current view is resized

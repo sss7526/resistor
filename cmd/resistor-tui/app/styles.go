@@ -6,7 +6,7 @@ import (
 
 type styles struct {
 	header lipgloss.Style
-	panel lipgloss.Style
+	panel  lipgloss.Style
 	footer lipgloss.Style
 }
 
@@ -45,7 +45,7 @@ func newStyles() styles {
 // the current terminal width.
 func (s styles) layout(body string, width int) string {
 	header := s.header.Width(width).Render("Resistor Engineering Toolkit")
-	panel := s.panel.Width(width-4).Render(body)
+	panel := s.panel.Width(width - 4).Render(body)
 	footer := s.footer.Width(width).Render("q: quit • esc: back")
 
 	return lipgloss.JoinVertical(

@@ -9,7 +9,7 @@ package app
 // Resize must be implemented by the view
 // if it needs to adjust internal components.
 type BaseView struct {
-	width int
+	width  int
 	height int
 }
 

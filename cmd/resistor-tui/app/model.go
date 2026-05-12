@@ -37,9 +37,9 @@ const (
 // returns a new View from its Update method.
 type AppModel struct {
 	current View
-	styles styles
+	styles  styles
 
-	width int
+	width  int
 	height int
 }
 
@@ -48,7 +48,7 @@ func New() AppModel {
 
 	return AppModel{
 		current: menu,
-		styles: newStyles(),
+		styles:  newStyles(),
 	}
 }
 
@@ -65,36 +65,36 @@ func (m AppModel) Init() tea.Cmd {
 // immediately resized using the last known dimensions.
 func (m AppModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
-    switch msg := msg.(type) {
+	switch msg := msg.(type) {
 
-    case tea.KeyMsg:
-        switch msg.String() {
-        case "ctrl+c", "q":
-            return m, tea.Quit
-        }
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "ctrl+c", "q":
+			return m, tea.Quit
+		}
 
-    case tea.WindowSizeMsg:
-        m.width = msg.Width
-        m.height = msg.Height
+	case tea.WindowSizeMsg:
+		m.width = msg.Width
+		m.height = msg.Height
 
-        if r, ok := m.current.(Resizable); ok {
-            r.Resize(m.width, m.height)
-        }
-    }
+		if r, ok := m.current.(Resizable); ok {
+			r.Resize(m.width, m.height)
+		}
+	}
 
-    next, cmd := m.current.Update(msg)
+	next, cmd := m.current.Update(msg)
 
-    // Always replace current view
-    m.current = next
+	// Always replace current view
+	m.current = next
 
-    // Always resize after view replacement
-    if m.width > 0 && m.height > 0 {
-        if r, ok := m.current.(Resizable); ok {
-            r.Resize(m.width, m.height)
-        }
-    }
+	// Always resize after view replacement
+	if m.width > 0 && m.height > 0 {
+		if r, ok := m.current.(Resizable); ok {
+			r.Resize(m.width, m.height)
+		}
+	}
 
-    return m, cmd
+	return m, cmd
 }
 
 // View renders the active view wrapped in global layout.

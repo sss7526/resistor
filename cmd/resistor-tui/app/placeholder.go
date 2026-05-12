@@ -1,7 +1,7 @@
 package app
 
 import (
-    tea "github.com/charmbracelet/bubbletea"
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 // PlaceholderView is a temporary stand-in for
@@ -12,28 +12,28 @@ import (
 //
 // ESC returns to the main menu.
 type PlaceholderView struct {
-    message string
+	message string
 }
 
 func NewPlaceholderView(msg string) *PlaceholderView {
-    return &PlaceholderView{message: msg}
+	return &PlaceholderView{message: msg}
 }
 
 func (p *PlaceholderView) Init() tea.Cmd {
-    return nil
+	return nil
 }
 
 func (p *PlaceholderView) Update(msg tea.Msg) (View, tea.Cmd) {
 
-    if key, ok := msg.(tea.KeyMsg); ok {
-        if key.String() == "esc" {
-            return NewMenu(), nil
-        }
-    }
+	if key, ok := msg.(tea.KeyMsg); ok {
+		if key.String() == "esc" {
+			return NewMenu(), nil
+		}
+	}
 
-    return p, nil
+	return p, nil
 }
 
 func (p *PlaceholderView) View() string {
-    return p.message + "\n\n(Press ESC to return)"
+	return p.message + "\n\n(Press ESC to return)"
 }
