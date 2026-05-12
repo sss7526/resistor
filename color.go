@@ -18,9 +18,26 @@ const (
 	Gold   Color = "gold"
 	Silver Color = "silver"
 
+	Beige Color = "beige"
+	Tan   Color = "tan"
+
 	None Color = "none" // used when no tolerance band exists (±20%)
 )
 
 func (c Color) String() string {
 	return string(c)
+}
+
+/*
+BodyColors returns colors meaningful for resistor body inference.
+
+These are distinct from band digit colors.
+*/
+func BodyColors() []Color {
+	return []Color{
+		Blue,
+		Green,
+		Beige,
+		Tan,
+	}
 }

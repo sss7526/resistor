@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
@@ -12,53 +11,27 @@ import (
 	"github.com/sss7526/resistor"
 )
 
-///////////////////////////////////////////////////////////////////////////////
-// InferView
-///////////////////////////////////////////////////////////////////////////////
-
-/*
-InferView provides structured input for resistor inference.
-
-Users may select:
-
-  - Input mode: Bands or SMD
-  - Band count (4/5/6)
-  - Individual band colors
-  - Body color
-  - Length
-  - Package type
-
-The view reactively calls resistor.InferResistor and renders:
-
-  - Electrical properties
-  - Inferred type
-  - Power rating
-  - Voltage rating
-  - Confidence
-  - Assumptions
-
-ESC returns to the main menu.
-*/
 type InferView struct {
 	BaseView
 
-	form *huh.Form
-
+	form          *huh.Form
 	coreGroup     *huh.Group
 	physicalGroup *huh.Group
 
-	viewport viewport.Model
+	// Mode + structural state
+	mode          string
+	prevMode      string
+	bandCount     int
+	prevBandCount int
 
-	mode string
-
-	bandCount int
+	// Inputs
 	bands     []resistor.Color
 	smd       string
-
 	bodyColor resistor.Color
 	length    string
 	pkg       resistor.PackageType
 
+	// Result
 	result resistor.InferenceResult
 	err    error
 }
@@ -74,8 +47,7 @@ func NewInferView() *InferView {
 		bandCount: 4,
 		bands:     make([]resistor.Color, 6),
 	}
-	v.viewport = viewport.New(0, 0)
-	v.viewport.SetContent("")
+
 	v.buildForm()
 
 	return v
@@ -87,13 +59,6 @@ func NewInferView() *InferView {
 
 func (v *InferView) Resize(width, height int) {
 	v.BaseView.Resize(width, height)
-
-	totalWidth := width
-	formWidth := totalWidth / 2
-
-	// Viewport only occupies left half
-	v.viewport.Width = formWidth
-	v.viewport.Height = height - 4
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -105,13 +70,18 @@ func (v *InferView) Init() tea.Cmd {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Form Builder
+// Form Builder (Role-driven)
 ///////////////////////////////////////////////////////////////////////////////
 
 func (v *InferView) buildForm() {
 
-	// ----- Core Inputs Group -----
-	coreFields := []huh.Field{
+	v.prevMode = v.mode
+	v.prevBandCount = v.bandCount
+
+	var coreFields []huh.Field
+
+	// Mode selector
+	coreFields = append(coreFields,
 		huh.NewSelect[string]().
 			Title("Input Mode").
 			Options(
@@ -119,7 +89,7 @@ func (v *InferView) buildForm() {
 				huh.NewOption("SMD", "SMD"),
 			).
 			Value(&v.mode),
-	}
+	)
 
 	if v.mode == "Bands" {
 
@@ -134,16 +104,22 @@ func (v *InferView) buildForm() {
 				Value(&v.bandCount),
 		)
 
-		for i := 0; i < v.bandCount; i++ {
+		roles, _ := resistor.BandRolesForCount(v.bandCount)
+
+		for i, role := range roles {
+
+			validColors := resistor.ValidColorsForRole(role)
+
 			coreFields = append(coreFields,
 				huh.NewSelect[resistor.Color]().
-					Title(fmt.Sprintf("Band %d", i+1)).
-					Options(enumOptions(resistor.DigitColors())...).
+					Title(fmt.Sprintf("Band %d (%s)", i+1, role.String())).
+					Options(enumOptions(validColors)...).
 					Value(&v.bands[i]),
 			)
 		}
 
 	} else {
+
 		coreFields = append(coreFields,
 			huh.NewInput().
 				Title("SMD Marking").
@@ -153,11 +129,10 @@ func (v *InferView) buildForm() {
 
 	v.coreGroup = huh.NewGroup(coreFields...)
 
-	// ----- Physical Properties Group -----
-	physicalFields := []huh.Field{
+	v.physicalGroup = huh.NewGroup(
 		huh.NewSelect[resistor.Color]().
 			Title("Body Color").
-			Options(enumOptions(resistor.DigitColors())...).
+			Options(enumOptions(resistor.BodyColors())...).
 			Value(&v.bodyColor),
 
 		huh.NewInput().
@@ -168,14 +143,9 @@ func (v *InferView) buildForm() {
 			Title("Package").
 			Options(enumOptions(resistor.AllPackageTypes())...).
 			Value(&v.pkg),
-	}
-
-	v.physicalGroup = huh.NewGroup(physicalFields...)
-
-	v.form = huh.NewForm(
-		v.coreGroup,
-		v.physicalGroup,
 	)
+
+	v.form = huh.NewForm(v.coreGroup, v.physicalGroup)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -185,6 +155,7 @@ func (v *InferView) buildForm() {
 func (v *InferView) Update(msg tea.Msg) (View, tea.Cmd) {
 
 	switch msg := msg.(type) {
+
 	case tea.KeyMsg:
 		if msg.String() == "esc" {
 			return NewMenu(), nil
@@ -194,7 +165,12 @@ func (v *InferView) Update(msg tea.Msg) (View, tea.Cmd) {
 	updated, cmd := v.form.Update(msg)
 	v.form = updated.(*huh.Form)
 
-	v.viewport, _ = v.viewport.Update(msg)
+	// Structural change detection
+	if v.mode != v.prevMode || v.bandCount != v.prevBandCount {
+		v.buildForm()
+		v.Resize(v.width, v.height)
+		return v, v.form.Init()
+	}
 
 	v.computeResult()
 
@@ -202,7 +178,7 @@ func (v *InferView) Update(msg tea.Msg) (View, tea.Cmd) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// Reactive Computation
+// Reactive Inference
 ///////////////////////////////////////////////////////////////////////////////
 
 func (v *InferView) computeResult() {
@@ -210,7 +186,8 @@ func (v *InferView) computeResult() {
 	obs := resistor.ObservedResistor{}
 
 	if v.mode == "Bands" {
-		obs.Bands = v.bands[:v.bandCount]
+		roles, _ := resistor.BandRolesForCount(v.bandCount)
+		obs.Bands = v.bands[:len(roles)]
 	} else {
 		obs.Marking = v.smd
 	}
@@ -236,7 +213,7 @@ func (v *InferView) computeResult() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// View Rendering
+// View Rendering (Split Layout)
 ///////////////////////////////////////////////////////////////////////////////
 
 func (v *InferView) View() string {
@@ -249,26 +226,24 @@ func (v *InferView) View() string {
 	formWidth := totalWidth / 2
 	resultWidth := totalWidth - formWidth - 2
 
-	coreWidth := formWidth / 2
-	physicalWidth := formWidth - coreWidth - 2
+	// Split form into two columns
+	leftWidth := formWidth / 2
+	rightWidth := formWidth - leftWidth - 2
 
-	coreView := lipgloss.NewStyle().
-		Width(coreWidth).
+	corePanel := lipgloss.NewStyle().
+		Width(leftWidth).
 		Render(v.coreGroup.View())
 
-	physicalView := lipgloss.NewStyle().
-		Width(physicalWidth).
+	physicalPanel := lipgloss.NewStyle().
+		Width(rightWidth).
 		Render(v.physicalGroup.View())
 
-	formCombined := lipgloss.JoinHorizontal(
+	formSplit := lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		coreView,
+		corePanel,
 		"  ",
-		physicalView,
+		physicalPanel,
 	)
-
-	// Set viewport content
-	v.viewport.SetContent(formCombined)
 
 	resultPanel := lipgloss.NewStyle().
 		Width(resultWidth).
@@ -276,11 +251,15 @@ func (v *InferView) View() string {
 
 	return lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		v.viewport.View(),
+		formSplit,
 		"  ",
 		resultPanel,
 	)
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// Result Rendering
+///////////////////////////////////////////////////////////////////////////////
 
 func (v *InferView) renderResult() string {
 
