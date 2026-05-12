@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
@@ -96,6 +97,10 @@ func NewSelectView() *SelectView {
 
 func (v *SelectView) Resize(width, height int) {
 	v.BaseView.Resize(width, height)
+
+	leftWidth := width / 2
+
+	v.form = v.form.WithWidth(leftWidth - 2)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -176,32 +181,47 @@ func (v *SelectView) View() string {
 
 	formView := v.form.View()
 
-	resultView := ""
+	resultView := v.renderResult()
 
-	if v.err != nil {
-		resultView = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FF5555")).
-			Render(v.err.Error())
-	} else if v.result.SelectedResistance != 0 {
-		resultView = fmt.Sprintf(
-			"Selected: %.6gΩ\nBands:\n%s",
-			v.result.SelectedResistance,
-			formatBands(v.result.Bands),
-		)
-	}
-
-	return lipgloss.JoinVertical(
-		lipgloss.Left,
-		"Select Resistor\n",
-		formView,
-		"\n",
-		resultView,
-	)
+	return splitLayout(v.width, formView, resultView)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // Helpers
 ///////////////////////////////////////////////////////////////////////////////
+
+func (v *SelectView) renderResult() string {
+
+    if v.err != nil {
+        return lipgloss.NewStyle().
+            Foreground(lipgloss.Color("#FF5555")).
+            Render(v.err.Error())
+    }
+
+    if v.result.SelectedResistance == 0 {
+        return "Enter values to compute result."
+    }
+
+    builder := strings.Builder{}
+
+    builder.WriteString(fmt.Sprintf(
+        "Selected: %.6gΩ\n\n",
+        v.result.SelectedResistance,
+    ))
+
+    builder.WriteString("Bands:\n")
+    builder.WriteString(formatBands(v.result.Bands))
+    builder.WriteString("\n")
+
+    if len(v.result.Assumptions) > 0 {
+        builder.WriteString("Assumptions:\n")
+        for _, a := range v.result.Assumptions {
+            builder.WriteString(fmt.Sprintf("  - %s\n", a))
+        }
+    }
+
+    return builder.String()
+}
 
 func enumOptions[T interface {
 	fmt.Stringer
