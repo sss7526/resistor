@@ -32,3 +32,4 @@ go.work.sum
 # .vscode/
 
 resistor-cli
+resistor-tui
