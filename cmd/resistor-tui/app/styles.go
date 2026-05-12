@@ -10,6 +10,16 @@ type styles struct {
 	footer lipgloss.Style
 }
 
+// styles defines the global visual theme for the TUI.
+//
+// All layout styling is centralized here to ensure:
+//
+//   - Consistent look and feel
+//   - No inline styling scattered across views
+//   - Easy future theming adjustments
+//
+// Individual views render body content only.
+// AppModel wraps body content using layout().
 func newStyles() styles {
 	return styles{
 
@@ -28,6 +38,11 @@ func newStyles() styles {
 	}
 }
 
+// layout composes header, body panel, and footer
+// into a vertically stacked layout.
+//
+// width is provided by AppModel and reflects
+// the current terminal width.
 func (s styles) layout(body string, width int) string {
 	header := s.header.Width(width).Render("Resistor Engineering Toolkit")
 	panel := s.panel.Width(width-4).Render(body)

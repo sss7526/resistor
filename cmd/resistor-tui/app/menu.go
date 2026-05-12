@@ -15,10 +15,25 @@ func (i menuItem) Description() string { return i.desc }
 func (i menuItem) FilterValue() string { return i.title }
 
 type MenuView struct {
+	BaseView
     list list.Model
 }
 
-func NewMenu() MenuView {
+// MenuView implements the main navigation screen.
+//
+// It uses bubbles/list for interactive navigation,
+// filtering, and selection.
+//
+// MenuView is responsible only for:
+//
+//   - Displaying selectable options
+//   - Returning the appropriate View on selection
+//   - Handling ESC appropriately when not filtering
+//
+// It does not perform routing logic itself.
+// AppModel replaces the active view based on
+// the returned View from Update.
+func NewMenu() *MenuView {
     items := []list.Item{
         menuItem{"Select Resistor", "Snap to standard values"},
         menuItem{"Infer Resistor", "Analyze from physical clues"},
@@ -31,14 +46,26 @@ func NewMenu() MenuView {
     l.Title = "Main Menu"
     l.SetShowHelp(true)
 
-    return MenuView{list: l}
+    return &MenuView{list: l}
 }
 
-func (m MenuView) Init() tea.Cmd {
+func (m *MenuView) Resize(width, height int) {
+	m.BaseView.Resize(width, height)
+	m.list.SetSize(width - 4, height - 6)
+}
+
+func (m *MenuView) Init() tea.Cmd {
     return nil
 }
 
-func (m MenuView) Update(msg tea.Msg) (View, tea.Cmd) {
+// Update handles list interaction and view transitions.
+//
+// Enter selects the highlighted item and returns
+// the corresponding View.
+//
+// ESC exits filter mode if active.
+// ESC is inert in the main menu when not filtering.
+func (m *MenuView) Update(msg tea.Msg) (View, tea.Cmd) {
 
     switch msg := msg.(type) {
 
@@ -74,6 +101,6 @@ func (m MenuView) Update(msg tea.Msg) (View, tea.Cmd) {
     return m, cmd
 }
 
-func (m MenuView) View() string {
+func (m *MenuView) View() string {
     return m.list.View()
 }
