@@ -223,19 +223,6 @@ func (v *SelectView) renderResult() string {
     return builder.String()
 }
 
-func enumOptions[T interface {
-	fmt.Stringer
-	comparable
-}](values []T) []huh.Option[T] {
-
-	opts := make([]huh.Option[T], len(values))
-	for i, v := range values {
-		opts[i] = huh.NewOption(v.String(), v)
-	}
-
-	return opts
-}
-
 func formatBands(bands []resistor.Color) string {
 	out := ""
 	for _, b := range bands {

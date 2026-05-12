@@ -1,6 +1,10 @@
 package app
 
-import "github.com/charmbracelet/lipgloss"
+import (
+	"fmt"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/huh"
+)
 
 // BaseView provides shared width/height tracking
 // for views that depend on terminal dimensions.
@@ -49,4 +53,17 @@ func splitLayout(width int, left string, right string) string {
         "  ",
         rightPanel,
     )
+}
+
+func enumOptions[T interface {
+	fmt.Stringer
+	comparable
+}](values []T) []huh.Option[T] {
+
+	opts := make([]huh.Option[T], len(values))
+	for i, v := range values {
+		opts[i] = huh.NewOption(v.String(), v)
+	}
+
+	return opts
 }
