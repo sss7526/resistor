@@ -2,8 +2,11 @@ package app
 
 import (
 	"fmt"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/huh"
+	"github.com/charmbracelet/lipgloss"
+	"strings"
+
+	"github.com/sss7526/resistor"
 )
 
 // BaseView provides shared width/height tracking
@@ -32,27 +35,27 @@ func (b *BaseView) Resize(width, height int) {
 //
 // leftWidth is proportional; remaining width goes to right.
 func splitLayout(width int, left string, right string) string {
-    if width <= 0 {
-        return left + "\n" + right
-    }
+	if width <= 0 {
+		return left + "\n" + right
+	}
 
-    leftWidth := width / 2
-    rightWidth := width - leftWidth - 2
+	leftWidth := width / 2
+	rightWidth := width - leftWidth - 2
 
-    leftPanel := lipgloss.NewStyle().
-        Width(leftWidth).
-        Render(left)
+	leftPanel := lipgloss.NewStyle().
+		Width(leftWidth).
+		Render(left)
 
-    rightPanel := lipgloss.NewStyle().
-        Width(rightWidth).
-        Render(right)
+	rightPanel := lipgloss.NewStyle().
+		Width(rightWidth).
+		Render(right)
 
-    return lipgloss.JoinHorizontal(
-        lipgloss.Top,
-        leftPanel,
-        "  ",
-        rightPanel,
-    )
+	return lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		leftPanel,
+		"  ",
+		rightPanel,
+	)
 }
 
 func enumOptions[T interface {
@@ -66,4 +69,60 @@ func enumOptions[T interface {
 	}
 
 	return opts
+}
+
+func renderBands(bands []resistor.Color) string {
+	var b strings.Builder
+	for _, c := range bands {
+		b.WriteString(fmt.Sprintf("  %s\n", c))
+	}
+	return b.String()
+}
+
+func renderAssumptions(assumptions []string) string {
+	if len(assumptions) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("Assumptions:\n")
+	for _, a := range assumptions {
+		b.WriteString(fmt.Sprintf("  - %s\n", a))
+	}
+	return b.String()
+}
+
+func renderWarnings(warnings []resistor.AnalysisWarning) string {
+	if len(warnings) == 0 {
+		return ""
+	}
+
+	var b strings.Builder
+	b.WriteString("Warnings:\n")
+
+	for _, w := range warnings {
+		style := lipgloss.NewStyle()
+
+		switch w.Level {
+		case resistor.WarningDanger:
+			style = style.Foreground(lipgloss.Color("#FF0000"))
+		case resistor.WarningCaution:
+			style = style.Foreground(lipgloss.Color("#FFA500"))
+		case resistor.WarningInfo:
+			style = style.Foreground(lipgloss.Color("#AAAAAA"))
+		}
+
+		b.WriteString(style.Render(fmt.Sprintf("  - %s\n", w.Message)))
+	}
+
+	return b.String()
+}
+
+func renderConfidence(conf float64) string {
+	barWidth := 20
+	filled := int(conf * float64(barWidth))
+
+	bar := strings.Repeat("█", filled) +
+		strings.Repeat("░", barWidth-filled)
+
+	return fmt.Sprintf("Confidence: [%s] %.2f\n", bar, conf)
 }

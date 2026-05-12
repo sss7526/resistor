@@ -20,3 +20,7 @@ const (
 
 	None Color = "none" // used when no tolerance band exists (±20%)
 )
+
+func (c Color) String() string {
+	return string(c)
+}

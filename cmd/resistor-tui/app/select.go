@@ -192,35 +192,35 @@ func (v *SelectView) View() string {
 
 func (v *SelectView) renderResult() string {
 
-    if v.err != nil {
-        return lipgloss.NewStyle().
-            Foreground(lipgloss.Color("#FF5555")).
-            Render(v.err.Error())
-    }
+	if v.err != nil {
+		return lipgloss.NewStyle().
+			Foreground(lipgloss.Color("#FF5555")).
+			Render(v.err.Error())
+	}
 
-    if v.result.SelectedResistance == 0 {
-        return "Enter values to compute result."
-    }
+	if v.result.SelectedResistance == 0 {
+		return "Enter values to compute result."
+	}
 
-    builder := strings.Builder{}
+	builder := strings.Builder{}
 
-    builder.WriteString(fmt.Sprintf(
-        "Selected: %.6gΩ\n\n",
-        v.result.SelectedResistance,
-    ))
+	builder.WriteString(fmt.Sprintf(
+		"Selected: %.6gΩ\n\n",
+		v.result.SelectedResistance,
+	))
 
-    builder.WriteString("Bands:\n")
-    builder.WriteString(formatBands(v.result.Bands))
-    builder.WriteString("\n")
+	builder.WriteString("Bands:\n")
+	builder.WriteString(formatBands(v.result.Bands))
+	builder.WriteString("\n")
 
-    if len(v.result.Assumptions) > 0 {
-        builder.WriteString("Assumptions:\n")
-        for _, a := range v.result.Assumptions {
-            builder.WriteString(fmt.Sprintf("  - %s\n", a))
-        }
-    }
+	if len(v.result.Assumptions) > 0 {
+		builder.WriteString("Assumptions:\n")
+		for _, a := range v.result.Assumptions {
+			builder.WriteString(fmt.Sprintf("  - %s\n", a))
+		}
+	}
 
-    return builder.String()
+	return builder.String()
 }
 
 func formatBands(bands []resistor.Color) string {

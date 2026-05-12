@@ -174,61 +174,61 @@ func AllPackageTypes() []PackageType {
 
 // DigitColors returns colors valid for significant digit bands (0–9).
 func DigitColors() []Color {
-    return []Color{
-        Black,
-        Brown,
-        Red,
-        Orange,
-        Yellow,
-        Green,
-        Blue,
-        Violet,
-        Grey,
-        White,
-    }
+	return []Color{
+		Black,
+		Brown,
+		Red,
+		Orange,
+		Yellow,
+		Green,
+		Blue,
+		Violet,
+		Grey,
+		White,
+	}
 }
 
 // MultiplierColors returns valid multiplier band colors.
 func MultiplierColors() []Color {
-    return []Color{
-        Black,
-        Brown,
-        Red,
-        Orange,
-        Yellow,
-        Green,
-        Blue,
-        Violet,
-        Grey,
-        White,
-        Gold,
-        Silver,
-    }
+	return []Color{
+		Black,
+		Brown,
+		Red,
+		Orange,
+		Yellow,
+		Green,
+		Blue,
+		Violet,
+		Grey,
+		White,
+		Gold,
+		Silver,
+	}
 }
 
 // ToleranceColors returns valid tolerance band colors.
 func ToleranceColors() []Color {
-    return []Color{
-        Brown,
-        Red,
-        Green,
-        Blue,
-        Violet,
-        Grey,
-        Gold,
-        Silver,
-        None,
-    }
+	return []Color{
+		Brown,
+		Red,
+		Green,
+		Blue,
+		Violet,
+		Grey,
+		Gold,
+		Silver,
+		None,
+	}
 }
 
 // TempCoeffColors returns valid 6th band temperature coefficient colors.
 func TempCoeffColors() []Color {
-    return []Color{
-        Brown,
-        Red,
-        Orange,
-        Yellow,
-        Blue,
-        Violet,
-    }
+	return []Color{
+		Brown,
+		Red,
+		Orange,
+		Yellow,
+		Blue,
+		Violet,
+	}
 }
