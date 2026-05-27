@@ -332,3 +332,112 @@ responsibility is serving static files.
 - ✓ Errors surface cleanly without panics.
 - ✓ `make build-wasm` is reproducible.
 - ✓ Reference page loads and operates correctly in a current browser.
+
+---
+
+# Milestone 12 — Version Release
+
+**Goal:** Cut a tagged `v0.1.0` release so the `go get` path in the README resolves
+and the module is addressable by version from external projects.
+
+### Deliverables:
+- `v0.1.0` git tag pushed to the remote
+- GitHub release created with release notes summarising the API surface
+- `go get github.com/sss7526/resistor@v0.1.0` resolves correctly via the module proxy
+
+### Done When:
+- Tag exists on the remote and is visible via `go list -m github.com/sss7526/resistor@v0.1.0`.
+- Release notes cover all public API entry points.
+
+---
+
+# Milestone 13 — WASM Binary Size Reduction
+
+**Goal:** Reduce the WASM binary from ~3.4 MB to under 500 KB using TinyGo,
+making it practical to serve over the web without a loading penalty.
+
+### Constraints:
+- The library uses `math`, `strconv`, `strings`, and `encoding/json`. TinyGo supports
+  all of these but `encoding/json` reflection support is partial — evaluate whether
+  the JSON interop layer in `cmd/resistor-wasm/` needs adjustment.
+- If `encoding/json` is incompatible, replace with manual `syscall/js` field
+  mapping or a TinyGo-compatible JSON library.
+- `make build-wasm` must remain the single build command; add a `TINYGO=1` flag
+  or a separate `make build-wasm-tinygo` target.
+
+### Done When:
+- TinyGo build produces a correct `.wasm` artifact that passes the reference page checks.
+- Binary is under 500 KB (gzip).
+- Fallback standard-Go build still works if TinyGo is not installed.
+
+---
+
+# Milestone 14 — Web Application
+
+**Goal:** Build a usable single-page web application on top of the WASM module.
+The reference page (`web/index.html`) is a correctness harness; this milestone
+produces a real UI suitable for hobbyists.
+
+### Views:
+| View | Description |
+|---|---|
+| Select Resistor | Enter a target resistance, get the nearest standard value and color band diagram |
+| Decode Bands | Click colored band swatches, read resistance and tolerance |
+| SMD Tools | Decode/encode SMD markings |
+| Infer Resistor | Enter physical observations, read inferred properties and confidence |
+| Analyze Resistor | Enter electrical conditions, read power, derating, and warnings |
+
+### Design Constraints:
+- All computation client-side via the WASM module — no server-side logic.
+- Color band display must use actual colors, not text labels.
+- Responsive layout; usable on a phone.
+
+### Done When:
+- All five views are functional.
+- Color band diagram renders correct colors for any valid input.
+- Works in current Chrome, Firefox, and Safari without a build step.
+
+---
+
+# Milestone 15 — Hot-Path Performance
+
+**Goal:** Replace the two linear-scan hot paths identified by benchmarks with
+O(1) or O(log N) alternatives.
+
+### Targets:
+- **`NearestStandard` E96/E192** (~6.5 µs): currently iterates all values per decade.
+  Replace with binary search on the sorted series table.
+- **`EncodeSMD` EIA-96** (~410 ns): currently an O(1152) nested loop scan.
+  Replace with a pre-built `map[float64]string` lookup keyed by the 96 canonical
+  values × 12 multiplier letters.
+
+### Done When:
+- `BenchmarkNearestStandard_E96` improves by ≥ 5×.
+- `BenchmarkEncodeSMD_EIA96` improves by ≥ 5×.
+- All existing tests continue to pass.
+
+---
+
+# Milestone 16 — E48/E96/E192 SMD Encoding
+
+**Goal:** Close the gap between `NearestStandard` (which supports E48–E192) and
+`EncodeSMD` (which only supports 3/4-digit and EIA-96), so high-precision series
+values are fully round-trippable through the CLI, TUI, and WASM encode path.
+
+### Problem:
+`EncodeSMD` with `SMDStandard` or `SMDAuto` rejects values that are valid E96/E192
+standard values but not representable in 3/4-digit format. A user who calls
+`SelectStandardResistor` with E96 and then tries to encode the result as an SMD
+marking gets an error.
+
+### Deliverables:
+- `EncodeSMD` auto-selects EIA-96 for E96/E192 values that are not 3/4-digit
+  representable, rather than returning an error.
+- Or: a new `SMDPrecision` encoding mode that always prefers EIA-96.
+- CLI `smd encode` and WASM `encodeSMD` pick up the fix transparently.
+- New tests covering the E96 → SMD round-trip.
+
+### Done When:
+- `SelectStandardResistor` E96 result feeds into `EncodeSMD` without error for
+  all 96 base values across all decades.
+- Round-trip `DecodeSMD(EncodeSMD(v, SMDAuto)) == v` holds for all E96 values.
