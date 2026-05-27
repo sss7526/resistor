@@ -9,10 +9,12 @@ Core principles:
 - Safe defaults for hobbyists
 
 Delivery targets:
-- Core library: importable Go package for use in other projects
-- CLI: non-interactive command-line toolkit
-- TUI: interactive terminal application
-- WASM: client-side web toolkit; server responsibility is serving static files only
+- Core library: importable Go package for use in other projects ✓
+- CLI: non-interactive command-line toolkit ✓
+- TUI: interactive terminal application ✓
+- WASM: client-side web toolkit; server responsibility is serving static files only ✓
+
+**All delivery targets complete as of Milestone 11.**
 
 ---
 
