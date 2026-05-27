@@ -2,6 +2,11 @@
 # Go Resistor Library Makefile
 # ---------------------------------------
 
+GOBIN := $(shell go env GOBIN)
+ifeq ($(GOBIN),)
+GOBIN := $(shell go env GOPATH)/bin
+endif
+
 # Package name (auto-detect)
 PKG := ./...
 CLI := resistor-cli
@@ -141,6 +146,9 @@ clean:
 	go clean -testcache
 	rm -rf testdata/fuzz
 	rm -f $(CLI)
+	rm -f $(TUI)
+	rm -f $(GOBIN)/$(CLI)
+	rm -f $(GOBIN)/$(TUI)
 
 # ---------------------------------------
 # Help
