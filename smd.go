@@ -258,24 +258,25 @@ func encodeEIA96(resistance float64) (string, error) {
 ///////////////////////////////////////////////////////////////////////////////
 
 func encodeStandardSMD(resistance float64) (string, error) {
+	const eps = 1e-9
 
 	// Try 3-digit first
 	for exp := 0; exp <= 9; exp++ {
-
 		scaled := resistance / math.Pow(10, float64(exp))
-
-		if scaled >= 10 && scaled < 100 && math.Mod(scaled, 1) == 0 {
-			return fmt.Sprintf("%02d%d", int(scaled), exp), nil
+		rounded := math.Round(scaled)
+		// Use integer bounds on rounded (not float scaled) to prevent a value
+		// like scaled=99.9999999999 from rounding to 100 and overflowing %02d.
+		if rounded >= 10 && rounded < 100 && math.Abs(rounded-scaled) < eps {
+			return fmt.Sprintf("%02d%d", int(rounded), exp), nil
 		}
 	}
 
 	// Then try 4-digit
 	for exp := 0; exp <= 9; exp++ {
-
 		scaled := resistance / math.Pow(10, float64(exp))
-
-		if scaled >= 100 && scaled < 1000 && math.Mod(scaled, 1) == 0 {
-			return fmt.Sprintf("%03d%d", int(scaled), exp), nil
+		rounded := math.Round(scaled)
+		if rounded >= 100 && rounded < 1000 && math.Abs(rounded-scaled) < eps {
+			return fmt.Sprintf("%03d%d", int(rounded), exp), nil
 		}
 	}
 
