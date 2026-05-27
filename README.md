@@ -241,6 +241,13 @@ make fuzz         # run all fuzz targets for 10 seconds each
 make fuzz FUZZTIME=60s
 ```
 
+Benchmarks:
+
+```
+go test -bench=. -benchtime=1s ./...
+go test -bench=BenchmarkInferResistor -benchmem ./...
+```
+
 ---
 
 ## Contributing
