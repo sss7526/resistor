@@ -6,7 +6,7 @@ Open an issue before writing code for anything non-trivial. It avoids duplicated
 
 ## Workflow
 
-All work happens on a feature branch. Never commit directly to `main`.
+Fork the repository, create a branch for your change, and open a pull request against `main`.
 
 ```
 git checkout -b your-branch-name
