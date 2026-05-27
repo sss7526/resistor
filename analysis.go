@@ -57,7 +57,7 @@ type AnalysisReport struct {
 // Public API
 ///////////////////////////////////////////////////////////////////////////////
 
-// AnalyzeResistor performs deterministic engieering analysis of a resistor
+// AnalyzeResistor performs deterministic engineering analysis of a resistor
 // under specified electrical conditions.
 //
 // It computes:
@@ -65,7 +65,7 @@ type AnalysisReport struct {
 //   - Voltage drop
 //   - Current
 //   - Derated safe power (50% rule)
-//   - Worse-case resistance bounds
+//   - Worst-case resistance bounds
 //
 // The function does not error for missing optional inputs.
 // Instead, it produces structured warnings.
@@ -111,7 +111,7 @@ func AnalyzeResistor(input AnalysisInput) (AnalysisReport, error) {
 	} else {
 		warnings = append(warnings, AnalysisWarning{
 			Level:   WarningInfo,
-			Message: "No appllied voltage or current provided: power dissipation not computed",
+			Message: "No applied voltage or current provided: power dissipation not computed",
 		})
 	}
 
@@ -145,7 +145,7 @@ func AnalyzeResistor(input AnalysisInput) (AnalysisReport, error) {
 	} else {
 		warnings = append(warnings, AnalysisWarning{
 			Level:   WarningInfo,
-			Message: "Power rating uknown; derating analysis unavailable",
+			Message: "Power rating unknown; derating analysis unavailable",
 		})
 	}
 

@@ -38,6 +38,9 @@ var analyzeCmd = &cobra.Command{
 		if anR <= 0 {
 			return cli.Respond(jsonOutput, nil, fmt.Errorf("resistance (--r) must be positive"))
 		}
+		if anTol < 0 {
+			return cli.Respond(jsonOutput, nil, fmt.Errorf("tolerance (--tol) must be non-negative"))
+		}
 
 		spec := resistor.ResistorSpec{
 			ResistanceOhms: anR,
@@ -68,9 +71,9 @@ var analyzeCmd = &cobra.Command{
 			fmt.Printf("Derated Safe: %-10.6gW\n", report.DeratedSafePower)
 		}
 
-		if report.WorstCaseResistanceMin > 0 {
-			fmt.Printf("WC R Min:     %-10.6gΩ\n", report.WorstCaseResistanceMin)
-			fmt.Printf("WC R Max:     %-10.6gΩ\n", report.WorstCaseResistanceMax)
+		if report.WorstCaseResistanceMax > 0 {
+			fmt.Printf("R Min (WC):   %-10.6gΩ\n", report.WorstCaseResistanceMin)
+			fmt.Printf("R Max (WC):   %-10.6gΩ\n", report.WorstCaseResistanceMax)
 		}
 
 		for _, w := range report.Warnings {

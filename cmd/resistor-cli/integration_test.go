@@ -135,8 +135,31 @@ func TestCLI_Analyze_VoltageDriven(t *testing.T) {
 
 func TestCLI_Analyze_WorstCaseBounds(t *testing.T) {
 	out := runCLISuccess(t, "analyze", "--r", "100", "--v", "10", "--tol", "5")
-	require.Contains(t, out, "WC R Min")
-	require.Contains(t, out, "WC R Max")
+	require.Contains(t, out, "R Min (WC)")
+	require.Contains(t, out, "R Max (WC)")
+}
+
+func TestCLI_Analyze_NoDeratedSafe_WithoutPwr(t *testing.T) {
+	out := runCLISuccess(t, "analyze", "--r", "100", "--v", "10")
+	require.NotContains(t, out, "Derated Safe")
+}
+
+func TestCLI_Analyze_NoWorstCase_WithoutTol(t *testing.T) {
+	out := runCLISuccess(t, "analyze", "--r", "100", "--v", "10")
+	require.NotContains(t, out, "R Min (WC)")
+	require.NotContains(t, out, "R Max (WC)")
+}
+
+func TestCLI_Analyze_NegativeTolerance(t *testing.T) {
+	out := runCLIError(t, "analyze", "--r", "100", "--v", "10", "--tol", "-5")
+	require.Contains(t, out, "tolerance")
+}
+
+func TestCLI_Analyze_FullTolerance(t *testing.T) {
+	// 100% tolerance: R min = 0, R max = 2R — both bounds must appear
+	out := runCLISuccess(t, "analyze", "--r", "100", "--v", "10", "--tol", "100")
+	require.Contains(t, out, "R Min (WC)")
+	require.Contains(t, out, "R Max (WC)")
 }
 
 func TestCLI_Analyze_CurrentDriven(t *testing.T) {
