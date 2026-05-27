@@ -89,7 +89,7 @@ func (m *MenuView) Update(msg tea.Msg) (View, tea.Cmd) {
 			case 2:
 				return NewAnalyzeView(), nil
 			case 3:
-				return NewPlaceholderView("SMD View (not yet implemented)"), nil
+				return NewSMDView(), nil
 			case 4:
 				return m, tea.Quit
 			}
