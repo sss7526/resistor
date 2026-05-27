@@ -139,13 +139,9 @@ func TestCLI_Analyze_WorstCaseBounds(t *testing.T) {
 	require.Contains(t, out, "R Max (WC)")
 }
 
-func TestCLI_Analyze_NoDeratedSafe_WithoutPwr(t *testing.T) {
+func TestCLI_Analyze_OptionalFieldsAbsentWithoutInputs(t *testing.T) {
 	out := runCLISuccess(t, "analyze", "--r", "100", "--v", "10")
 	require.NotContains(t, out, "Derated Safe")
-}
-
-func TestCLI_Analyze_NoWorstCase_WithoutTol(t *testing.T) {
-	out := runCLISuccess(t, "analyze", "--r", "100", "--v", "10")
 	require.NotContains(t, out, "R Min (WC)")
 	require.NotContains(t, out, "R Max (WC)")
 }
