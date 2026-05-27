@@ -279,23 +279,14 @@ All commands support `--json` for machine-readable output.
 | Analyze Resistor | Complete |
 | SMD Tools | Complete |
 
-### Remaining Work:
-
-**InferView structural rebuild (sole blocker):**
-- `InferView` rebuilds the entire `huh` form on every Up/Down arrow keypress
-  in the Input Mode and Band Count selects, because huh writes through the
-  bound pointer on each navigation key.
-- The same defect existed in `SMDView` and was fixed by deferring the
-  structural rebuild until Enter/Tab confirms the selection. The identical
-  fix applies to `InferView`.
-
 ### Resolved Stability Issues:
 - `huh` forms going blank on StateCompleted: all views now detect
   `StateCompleted` and call `buildForm()` + `form.Init()` to stay live.
 - `huh` Select filter mode ESC ejecting the user: ESC is now checked
   before `form.Update` in all form-based views (Select, Analyze, SMD).
-- Arrow-key navigation triggering structural rebuilds: fixed in SMDView
-  by deferring to Enter/Tab; same fix still needed in InferView.
+- Arrow-key navigation triggering structural rebuilds in mode/band-count
+  selects: fixed in both SMDView and InferView by deferring rebuild to
+  Enter/Tab confirmation.
 - Snapshot memoization: all views now use named snapshot structs to skip
   recomputation when inputs are unchanged.
 - `encodeStandardSMD` float boundary overflow: integer bounds check on
@@ -305,7 +296,7 @@ All commands support `--json` for machine-readable output.
 - ✓ All four views are functional.
 - ✓ Navigation between all views works without state corruption.
 - ✓ Layout is stable across terminal resize events.
-- ✗ `InferView` mode and band count changes do not cause visible form state loss.
+- ✓ `InferView` mode and band count changes do not cause visible form state loss.
 
 ---
 

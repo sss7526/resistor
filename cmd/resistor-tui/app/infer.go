@@ -178,11 +178,23 @@ func (v *InferView) Update(msg tea.Msg) (View, tea.Cmd) {
 
 	v.viewport, _ = v.viewport.Update(msg)
 
-	// Structural change detection
-	if v.mode != v.prevMode || v.bandCount != v.prevBandCount {
+	// Rebuild on form completion so the panel never goes blank.
+	if v.form.State == huh.StateCompleted {
 		v.buildForm()
-		v.Resize(v.width, v.height)
 		return v, v.form.Init()
+	}
+
+	// Structural change detection: defer rebuild to Enter/Tab confirmation.
+	// huh writes through bound pointers on every Up/Down keypress in Select
+	// fields — rebuilding on each arrow press resets form state mid-navigation.
+	if v.mode != v.prevMode || v.bandCount != v.prevBandCount {
+		if key, ok := msg.(tea.KeyMsg); ok {
+			switch key.String() {
+			case "enter", "tab", "shift+tab":
+				v.buildForm()
+				return v, v.form.Init()
+			}
+		}
 	}
 
 	v.computeResult()
