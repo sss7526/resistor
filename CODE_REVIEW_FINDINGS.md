@@ -264,6 +264,138 @@ identifiers, not natural-language text.
 
 ---
 
+## Lint Findings (golangci-lint v2.12.2)
+
+Run with: `make lint`
+
+Findings #6 and #8 above are confirmed independently by the `unused` and `staticcheck` linters.
+The items below are new findings surfaced by lint that are not covered by the code review section.
+
+---
+
+### 9. `smd_test.go:135` — integer overflow conversion and nonsensical test names
+
+**File:** `smd_test.go:135`
+**Linter:** gosec G115
+
+**Defect:** `string(rune(int(val)))` converts a `float64` test value to `int`, then to `rune`, then
+to a string to form a test name. gosec flags the `int → rune` conversion as a potential overflow
+(on 32-bit platforms `int` is 32 bits, same as `rune`, but the conversion is still flagged). Beyond
+the linter warning, the resulting test names are meaningless Unicode codepoints: `val=100` produces
+`"d"`, `val=1000` produces `"Ϩ"`, `val=4990` produces a random Unicode character. These names are
+useless for diagnosing failures.
+
+**Fix:** Replace with a proper numeric string for the test name:
+
+```go
+t.Run(fmt.Sprintf("EIA96 encode %.0f", val), func(t *testing.T) {
+```
+
+**Tests:** This is the test itself. No additional test needed.
+
+---
+
+### 10. `integration_test.go:27,42` — gosec G204 false positives in test code
+
+**File:** `cmd/resistor-cli/integration_test.go:27` and `:42`
+**Linter:** gosec G204
+
+**Defect:** gosec flags `exec.Command` calls where the binary path or arguments come from
+variables. Both call sites are intentional: one builds the CLI binary, the other invokes it under
+test. Neither is a security issue — integration tests necessarily spawn subprocesses with
+variable paths.
+
+**Fix:** Suppress with `//nolint:gosec` at each call site, with a brief reason:
+
+```go
+build := exec.Command("go", "build", "-ldflags", ldflags, "-o", binaryPath, ".") //nolint:gosec // intentional subprocess in test
+...
+cmd := exec.Command(binary, args...) //nolint:gosec // intentional subprocess in test
+```
+
+**Tests:** No test changes needed beyond the suppression comment.
+
+---
+
+### 11. `helpers.go:31` — De Morgan's law (QF1001)
+
+**File:** `cmd/resistor-cli/cmd/helpers.go:31`
+**Linter:** staticcheck QF1001
+
+**Defect:** The condition `!(digitOK || multOK || tolOK || tempOK)` is logically equivalent to
+`!digitOK && !multOK && !tolOK && !tempOK` but is harder to read. staticcheck suggests applying
+De Morgan's law.
+
+**Fix:**
+
+```go
+if !digitOK && !multOK && !tolOK && !tempOK {
+```
+
+**Tests:** Logic is unchanged. No test changes required.
+
+---
+
+### 12. `WriteString(fmt.Sprintf(...))` pattern (QF1012)
+
+**Files:** `cmd/resistor-tui/app/common.go:77,89` and `cmd/resistor-tui/app/select.go:207`
+**Linter:** staticcheck QF1012
+
+**Defect:** Three call sites use `b.WriteString(fmt.Sprintf(...))` where `fmt.Fprintf(&b, ...)`
+is both shorter and avoids an intermediate string allocation.
+
+**Fix:** Replace each occurrence:
+
+```go
+// Before
+b.WriteString(fmt.Sprintf("  %s\n", c))
+// After
+fmt.Fprintf(&b, "  %s\n", c)
+```
+
+Apply the same pattern at all three locations.
+
+**Tests:** Output is identical. No test changes required.
+
+---
+
+### 13. TUI stub symbols flagged as unused
+
+**Files:** `cmd/resistor-tui/app/model.go:7–15`, `cmd/resistor-tui/app/common.go:74,94`,
+`cmd/resistor-tui/app/version.go:3`
+**Linter:** unused
+
+**Defect:** Nine symbols are unused because the TUI's Analyze and SMD views are not yet
+implemented:
+
+- `type viewState` and constants `viewMenu`, `viewSelect`, `viewInfer`, `viewAnalyze`, `viewSMD`,
+  `viewQuit` in `model.go` — view routing enum defined but not wired to any real views
+- `func renderBands` and `func renderWarnings` in `common.go` — helpers intended for Analyze/SMD
+  views that don't exist yet
+- `var version` in `version.go` — injected via `-ldflags` at build time but not referenced in any
+  Go code path
+
+**Fix:** These will clear naturally when the TUI Analyze and SMD views are implemented (tracked in
+MILESTONES.md M10). Until then the options are:
+
+- Leave `make lint` failing on these — acceptable while the TUI is a known work in progress
+- Suppress individually with `//nolint:unused` — adds noise to stub code
+- Wire `version` into the TUI's help or about text now, which is a trivial one-liner and removes
+  one warning immediately
+
+The `var version` unused warning is the easiest to fix independently of the view work:
+
+```go
+// version.go — ensure the variable is referenced somewhere, e.g. in model.go:
+func (m AppModel) version() string { return version }
+```
+
+Or simply use it in an existing string displayed by the TUI.
+
+**Tests:** No test changes required.
+
+---
+
 ## Resolution Checklist
 
 | # | File | Status |
@@ -276,3 +408,8 @@ identifiers, not natural-language text.
 | 6 | `smd.go:255` — `findEIA96Multiplier` dead code | open |
 | 7 | `bands.go:22` — wrong error message | open |
 | 8 | `internal/cli/format.go:16` — `strings.Title` deprecated | open |
+| 9 | `smd_test.go:135` — G115 integer overflow, nonsensical test names | open |
+| 10 | `integration_test.go:27,42` — G204 false positives, need nolint | open |
+| 11 | `cmd/resistor-cli/cmd/helpers.go:31` — De Morgan's simplification | open |
+| 12 | `common.go:77,89` + `select.go:207` — WriteString+Sprintf pattern | open |
+| 13 | TUI stubs — 9 unused symbols until Analyze/SMD views implemented | open |
