@@ -87,7 +87,7 @@ func (m *MenuView) Update(msg tea.Msg) (View, tea.Cmd) {
 			case 1:
 				return NewInferView(), nil
 			case 2:
-				return NewPlaceholderView("Analyze View (not yet implemented)"), nil
+				return NewAnalyzeView(), nil
 			case 3:
 				return NewPlaceholderView("SMD View (not yet implemented)"), nil
 			case 4:
