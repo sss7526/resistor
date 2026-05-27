@@ -40,10 +40,12 @@ type AnalyzeView struct {
 	power      string
 	tolerance  string
 
-	// Computed result
-	result    resistor.AnalysisReport
-	hasResult bool
-	err       error
+	// Input snapshot for memoization: skip recompute when nothing changed.
+	snapshot [5]string
+
+	// Computed result; nil means no result has been computed yet.
+	result *resistor.AnalysisReport
+	err    error
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -52,7 +54,18 @@ type AnalyzeView struct {
 
 func NewAnalyzeView() *AnalyzeView {
 	v := &AnalyzeView{}
+	v.buildForm()
+	return v
+}
 
+///////////////////////////////////////////////////////////////////////////////
+// Form Builder
+///////////////////////////////////////////////////////////////////////////////
+
+// buildForm constructs a fresh huh form bound to the existing field pointers.
+// Called on construction and again when the form reaches StateCompleted so the
+// user is never left with a blank panel.
+func (v *AnalyzeView) buildForm() {
 	v.form = huh.NewForm(
 		huh.NewGroup(
 			huh.NewInput().
@@ -77,7 +90,9 @@ func NewAnalyzeView() *AnalyzeView {
 		),
 	)
 
-	return v
+	if v.width > 0 {
+		v.form = v.form.WithWidth(v.width/2 - 2)
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -103,15 +118,22 @@ func (v *AnalyzeView) Init() tea.Cmd {
 ///////////////////////////////////////////////////////////////////////////////
 
 func (v *AnalyzeView) Update(msg tea.Msg) (View, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		if msg.String() == "esc" {
-			return NewMenu(), nil
-		}
-	}
-
+	// Pass message to form first so huh can handle any field-level keys
+	// (e.g. a future Select field using ESC to close its dropdown).
 	updated, cmd := v.form.Update(msg)
 	v.form = updated.(*huh.Form)
+
+	// When huh completes the form (user pressed Enter past the last field),
+	// rebuild so the panel doesn't go blank and the user can keep editing.
+	if v.form.State == huh.StateCompleted {
+		v.buildForm()
+		return v, v.form.Init()
+	}
+
+	// ESC navigates back to the menu after huh has had its turn.
+	if key, ok := msg.(tea.KeyMsg); ok && key.String() == "esc" {
+		return NewMenu(), nil
+	}
 
 	v.computeResult()
 
@@ -123,61 +145,74 @@ func (v *AnalyzeView) Update(msg tea.Msg) (View, tea.Cmd) {
 ///////////////////////////////////////////////////////////////////////////////
 
 func (v *AnalyzeView) computeResult() {
+	// Memoize: skip if no input field has changed since last run.
+	snap := [5]string{v.resistance, v.voltage, v.current, v.power, v.tolerance}
+	if snap == v.snapshot {
+		return
+	}
+	v.snapshot = snap
+
+	v.result = nil
+	v.err = nil
+
 	if v.resistance == "" {
-		v.err = nil
-		v.hasResult = false
 		return
 	}
 
 	r, err := strconv.ParseFloat(v.resistance, 64)
 	if err != nil || r <= 0 {
-		v.err = fmt.Errorf("invalid resistance")
-		v.hasResult = false
+		v.err = fmt.Errorf("resistance must be a positive number")
 		return
 	}
 
 	spec := resistor.ResistorSpec{ResistanceOhms: r}
 
+	// Optional fields: if non-empty they must parse to a positive number.
 	if v.power != "" {
 		pw, err := strconv.ParseFloat(v.power, 64)
-		if err == nil && pw > 0 {
-			spec.PowerWatts = pw
+		if err != nil || pw <= 0 {
+			v.err = fmt.Errorf("rated power must be a positive number")
+			return
 		}
+		spec.PowerWatts = pw
 	}
 
 	if v.tolerance != "" {
 		tol, err := strconv.ParseFloat(v.tolerance, 64)
-		if err == nil && tol > 0 {
-			spec.TolerancePct = tol
+		if err != nil || tol <= 0 {
+			v.err = fmt.Errorf("tolerance must be a positive number")
+			return
 		}
+		spec.TolerancePct = tol
 	}
 
 	input := resistor.AnalysisInput{Spec: spec}
 
 	if v.voltage != "" {
 		vv, err := strconv.ParseFloat(v.voltage, 64)
-		if err == nil {
-			input.AppliedVoltage = vv
+		if err != nil || vv <= 0 {
+			v.err = fmt.Errorf("voltage must be a positive number")
+			return
 		}
+		input.AppliedVoltage = vv
 	}
 
 	if v.current != "" {
 		ic, err := strconv.ParseFloat(v.current, 64)
-		if err == nil {
-			input.AppliedCurrent = ic
+		if err != nil || ic <= 0 {
+			v.err = fmt.Errorf("current must be a positive number")
+			return
 		}
+		input.AppliedCurrent = ic
 	}
 
-	result, err := resistor.AnalyzeResistor(input)
+	report, err := resistor.AnalyzeResistor(input)
 	if err != nil {
 		v.err = err
-		v.hasResult = false
 		return
 	}
 
-	v.result = result
-	v.hasResult = true
-	v.err = nil
+	v.result = &report
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -199,11 +234,11 @@ func (v *AnalyzeView) renderResult() string {
 			Render(v.err.Error())
 	}
 
-	if !v.hasResult {
+	if v.result == nil {
 		return "Enter resistance to compute analysis."
 	}
 
-	rep := v.result
+	rep := *v.result
 	var b strings.Builder
 
 	fmt.Fprintf(&b, "Power Dissipation: %.4g W\n", rep.PowerDissipation)
