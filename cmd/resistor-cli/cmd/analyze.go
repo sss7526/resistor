@@ -64,6 +64,15 @@ var analyzeCmd = &cobra.Command{
 		fmt.Printf("Current:      %-10.6gA\n", report.Current)
 		fmt.Printf("Power:        %-10.6gW\n", report.PowerDissipation)
 
+		if report.DeratedSafePower > 0 {
+			fmt.Printf("Derated Safe: %-10.6gW\n", report.DeratedSafePower)
+		}
+
+		if report.WorstCaseResistanceMin > 0 {
+			fmt.Printf("WC R Min:     %-10.6gΩ\n", report.WorstCaseResistanceMin)
+			fmt.Printf("WC R Max:     %-10.6gΩ\n", report.WorstCaseResistanceMax)
+		}
+
 		for _, w := range report.Warnings {
 			fmt.Printf("[%s] %s\n", w.Level, w.Message)
 		}

@@ -130,6 +130,13 @@ func TestCLI_Analyze_VoltageDriven(t *testing.T) {
 	out := runCLISuccess(t, "analyze", "--r", "100", "--v", "10", "--pwr", "0.5")
 	require.Contains(t, out, "Voltage")
 	require.Contains(t, out, "Power")
+	require.Contains(t, out, "Derated Safe")
+}
+
+func TestCLI_Analyze_WorstCaseBounds(t *testing.T) {
+	out := runCLISuccess(t, "analyze", "--r", "100", "--v", "10", "--tol", "5")
+	require.Contains(t, out, "WC R Min")
+	require.Contains(t, out, "WC R Max")
 }
 
 func TestCLI_Analyze_CurrentDriven(t *testing.T) {
