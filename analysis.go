@@ -40,15 +40,20 @@ type AnalysisInput struct {
 }
 
 // AnalysisReport contains deterministic electrical analysis results.
+//
+// DeratedSafePower, WorstCaseResistanceMin, and WorstCaseResistanceMax are
+// pointer fields. A nil value means the field was not computed (required input
+// was absent). A non-nil pointer to zero is a legitimately computed zero value
+// (e.g. WorstCaseResistanceMin at 100% tolerance).
 type AnalysisReport struct {
 	PowerDissipation float64
 	VoltageDrop      float64
 	Current          float64
 
-	DeratedSafePower float64
+	DeratedSafePower *float64 `json:"DeratedSafePower,omitempty"`
 
-	WorstCaseResistanceMin float64
-	WorstCaseResistanceMax float64
+	WorstCaseResistanceMin *float64 `json:"WorstCaseResistanceMin,omitempty"`
+	WorstCaseResistanceMax *float64 `json:"WorstCaseResistanceMax,omitempty"`
 
 	Warnings []AnalysisWarning
 }
@@ -128,14 +133,15 @@ func AnalyzeResistor(input AnalysisInput) (AnalysisReport, error) {
 	// ---------------------------------------------------------
 
 	if spec.PowerWatts > 0 {
-		report.DeratedSafePower = 0.5 * spec.PowerWatts
+		dsp := 0.5 * spec.PowerWatts
+		report.DeratedSafePower = &dsp
 
 		if report.PowerDissipation > spec.PowerWatts {
 			warnings = append(warnings, AnalysisWarning{
 				Level:   WarningDanger,
 				Message: "Power dissipation exceeds rated power",
 			})
-		} else if report.PowerDissipation > report.DeratedSafePower {
+		} else if report.PowerDissipation > *report.DeratedSafePower {
 			warnings = append(warnings, AnalysisWarning{
 				Level:   WarningCaution,
 				Message: "Power dissipation exceeds recommended 50% derated threshold",
@@ -155,8 +161,10 @@ func AnalyzeResistor(input AnalysisInput) (AnalysisReport, error) {
 
 	if spec.TolerancePct > 0 {
 		tol := spec.TolerancePct / 100.0
-		report.WorstCaseResistanceMin = R * (1 - tol)
-		report.WorstCaseResistanceMax = R * (1 + tol)
+		wcMin := R * (1 - tol)
+		wcMax := R * (1 + tol)
+		report.WorstCaseResistanceMin = &wcMin
+		report.WorstCaseResistanceMax = &wcMax
 	} else {
 		warnings = append(warnings, AnalysisWarning{
 			Level:   WarningInfo,

@@ -150,8 +150,28 @@ func TestCLI_Analyze_NoWorstCase_WithoutTol(t *testing.T) {
 	require.NotContains(t, out, "R Max (WC)")
 }
 
+func TestCLI_Analyze_NegativeVoltage(t *testing.T) {
+	out := runCLIError(t, "analyze", "--r", "100", "--v", "-10")
+	require.Contains(t, out, "voltage")
+}
+
+func TestCLI_Analyze_NegativeCurrent(t *testing.T) {
+	out := runCLIError(t, "analyze", "--r", "100", "--i", "-0.1")
+	require.Contains(t, out, "current")
+}
+
+func TestCLI_Analyze_NegativePower(t *testing.T) {
+	out := runCLIError(t, "analyze", "--r", "100", "--v", "10", "--pwr", "-0.5")
+	require.Contains(t, out, "power")
+}
+
 func TestCLI_Analyze_NegativeTolerance(t *testing.T) {
 	out := runCLIError(t, "analyze", "--r", "100", "--v", "10", "--tol", "-5")
+	require.Contains(t, out, "tolerance")
+}
+
+func TestCLI_Analyze_ToleranceAbove100(t *testing.T) {
+	out := runCLIError(t, "analyze", "--r", "100", "--v", "10", "--tol", "150")
 	require.Contains(t, out, "tolerance")
 }
 
@@ -178,6 +198,39 @@ func TestCLI_Analyze_JSON(t *testing.T) {
 	var parsed map[string]interface{}
 	require.NoError(t, json.Unmarshal([]byte(out), &parsed))
 	require.Equal(t, true, parsed["success"])
+}
+
+func TestCLI_Analyze_JSON_OptionalFieldsPresent(t *testing.T) {
+	out := runCLISuccess(t, "analyze", "--r", "100", "--v", "10", "--pwr", "0.5", "--tol", "5", "--json")
+
+	var parsed map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(out), &parsed))
+
+	data, ok := parsed["data"].(map[string]interface{})
+	require.True(t, ok)
+
+	require.InDelta(t, 0.25, data["DeratedSafePower"], 1e-9)
+	require.InDelta(t, 95.0, data["WorstCaseResistanceMin"], 1e-9)
+	require.InDelta(t, 105.0, data["WorstCaseResistanceMax"], 1e-9)
+}
+
+func TestCLI_Analyze_JSON_OptionalFieldsAbsent(t *testing.T) {
+	out := runCLISuccess(t, "analyze", "--r", "100", "--v", "10", "--json")
+
+	var parsed map[string]interface{}
+	require.NoError(t, json.Unmarshal([]byte(out), &parsed))
+
+	data, ok := parsed["data"].(map[string]interface{})
+	require.True(t, ok)
+
+	_, hasDerated := data["DeratedSafePower"]
+	require.False(t, hasDerated, "DeratedSafePower should be absent from JSON when --pwr is not provided")
+
+	_, hasWCMin := data["WorstCaseResistanceMin"]
+	require.False(t, hasWCMin, "WorstCaseResistanceMin should be absent from JSON when --tol is not provided")
+
+	_, hasWCMax := data["WorstCaseResistanceMax"]
+	require.False(t, hasWCMax, "WorstCaseResistanceMax should be absent from JSON when --tol is not provided")
 }
 
 ///////////////////////////////////////////////////////////////////////////////

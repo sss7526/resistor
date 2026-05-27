@@ -22,8 +22,10 @@ func TestAnalyzeResistor_VoltageDriven(t *testing.T) {
 
 	require.InDelta(t, 0.1, report.Current, 1e-9)
 	require.InDelta(t, 1.0, report.PowerDissipation, 1e-9)
-	require.Equal(t, 95.0, report.WorstCaseResistanceMin)
-	require.Equal(t, 105.0, report.WorstCaseResistanceMax)
+	require.NotNil(t, report.WorstCaseResistanceMin)
+	require.Equal(t, 95.0, *report.WorstCaseResistanceMin)
+	require.NotNil(t, report.WorstCaseResistanceMax)
+	require.Equal(t, 105.0, *report.WorstCaseResistanceMax)
 
 	require.NotEmpty(t, report.Warnings)
 }
