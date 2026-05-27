@@ -150,7 +150,12 @@ func (v *SelectView) computeResult() {
 
 	tol := 0.0
 	if v.tolerance != "" {
-		tol, _ = strconv.ParseFloat(v.tolerance, 64)
+		var tolErr error
+		tol, tolErr = strconv.ParseFloat(v.tolerance, 64)
+		if tolErr != nil || tol < 0 {
+			v.err = fmt.Errorf("tolerance must be a non-negative number")
+			return
+		}
 	}
 
 	req := resistor.SelectionRequest{

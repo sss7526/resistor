@@ -10,6 +10,14 @@ import (
 	"github.com/sss7526/resistor"
 )
 
+// smdInputs is a snapshot of all SMDView inputs for memoizing computeResult.
+type smdInputs struct {
+	mode       string
+	marking    string
+	resistance string
+	encodeMode resistor.SMDEncodingMode
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // SMDView
 ///////////////////////////////////////////////////////////////////////////////
@@ -36,6 +44,9 @@ type SMDView struct {
 	// Encode inputs
 	resistance string
 	encodeMode resistor.SMDEncodingMode
+
+	// Memoization: skip recompute when inputs are unchanged.
+	snapshot smdInputs
 
 	// Results — only one is set at a time depending on mode
 	decodeResult *resistor.ResistorSpec
@@ -148,10 +159,17 @@ func (v *SMDView) Update(msg tea.Msg) (View, tea.Cmd) {
 	}
 
 	// Mode changed: rebuild input fields to match the new selection.
+	// huh writes through the mode pointer on every Up/Down keypress in the
+	// Select — defer the structural rebuild until the user confirms with
+	// Enter or Tab so mid-navigation arrow presses don't clear other fields.
 	if v.mode != v.prevMode {
-		v.buildForm()
-		v.Resize(v.width, v.height)
-		return v, v.form.Init()
+		if key, ok := msg.(tea.KeyMsg); ok {
+			switch key.String() {
+			case "enter", "tab", "shift+tab":
+				v.buildForm()
+				return v, v.form.Init()
+			}
+		}
 	}
 
 	v.computeResult()
@@ -164,6 +182,12 @@ func (v *SMDView) Update(msg tea.Msg) (View, tea.Cmd) {
 ///////////////////////////////////////////////////////////////////////////////
 
 func (v *SMDView) computeResult() {
+	snap := smdInputs{v.mode, v.marking, v.resistance, v.encodeMode}
+	if snap == v.snapshot {
+		return
+	}
+	v.snapshot = snap
+
 	v.err = nil
 	v.decodeResult = nil
 	v.encodeResult = ""
