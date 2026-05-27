@@ -116,10 +116,12 @@ func (v *SMDView) buildForm() {
 		v.form = v.form.WithWidth(v.width/2 - 2)
 	}
 
-	// Clear stale results whenever the form is rebuilt.
+	// Clear stale results and snapshot whenever the form is rebuilt so the
+	// next computeResult call always recomputes against the current inputs.
 	v.decodeResult = nil
 	v.encodeResult = ""
 	v.err = nil
+	v.snapshot = smdInputs{}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -144,6 +146,13 @@ func (v *SMDView) Init() tea.Cmd {
 ///////////////////////////////////////////////////////////////////////////////
 
 func (v *SMDView) Update(msg tea.Msg) (View, tea.Cmd) {
+	// ESC checked before form.Update so it always exits the view. If checked
+	// after, huh's Select filter mode consumes ESC to clear the filter and
+	// the same message also fires the navigation check, ejecting the user.
+	if key, ok := msg.(tea.KeyMsg); ok && key.String() == "esc" {
+		return NewMenu(), nil
+	}
+
 	updated, cmd := v.form.Update(msg)
 	v.form = updated.(*huh.Form)
 
@@ -151,11 +160,6 @@ func (v *SMDView) Update(msg tea.Msg) (View, tea.Cmd) {
 	if v.form.State == huh.StateCompleted {
 		v.buildForm()
 		return v, v.form.Init()
-	}
-
-	// ESC navigates back to the menu after huh has had its turn.
-	if key, ok := msg.(tea.KeyMsg); ok && key.String() == "esc" {
-		return NewMenu(), nil
 	}
 
 	// Mode changed: rebuild input fields to match the new selection.

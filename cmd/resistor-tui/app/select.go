@@ -37,6 +37,16 @@ Results are computed reactively after form updates.
 SelectView does not manage routing logic.
 ESC returns to the main menu.
 */
+
+// selectInputs holds a snapshot of all SelectView form fields for memoizing computeResult.
+// Named struct so the compiler flags any mismatch when fields are added or removed.
+type selectInputs struct {
+	resistance string
+	tolerance  string
+	series     resistor.ESeries
+	rounding   resistor.RoundingMode
+}
+
 type SelectView struct {
 	BaseView
 
@@ -47,6 +57,9 @@ type SelectView struct {
 	tolerance  string
 	series     resistor.ESeries
 	rounding   resistor.RoundingMode
+
+	// Input snapshot for memoization: skip recompute when nothing changed.
+	snapshot selectInputs
 
 	// Computed result
 	result resistor.SelectionResult
@@ -114,16 +127,19 @@ func (v *SelectView) Init() tea.Cmd {
 ///////////////////////////////////////////////////////////////////////////////
 
 func (v *SelectView) Update(msg tea.Msg) (View, tea.Cmd) {
+	// ESC checked before form.Update so it always exits the view. If checked
+	// after, huh's Select filter mode consumes ESC to clear the filter and
+	// the same message also fires the navigation check, ejecting the user.
+	if key, ok := msg.(tea.KeyMsg); ok && key.String() == "esc" {
+		return NewMenu(), nil
+	}
+
 	updated, cmd := v.form.Update(msg)
 	v.form = updated.(*huh.Form)
 
 	if v.form.State == huh.StateCompleted {
 		v.buildForm()
 		return v, v.form.Init()
-	}
-
-	if key, ok := msg.(tea.KeyMsg); ok && key.String() == "esc" {
-		return NewMenu(), nil
 	}
 
 	v.computeResult()
@@ -136,6 +152,11 @@ func (v *SelectView) Update(msg tea.Msg) (View, tea.Cmd) {
 ///////////////////////////////////////////////////////////////////////////////
 
 func (v *SelectView) computeResult() {
+	snap := selectInputs{v.resistance, v.tolerance, v.series, v.rounding}
+	if snap == v.snapshot {
+		return
+	}
+	v.snapshot = snap
 
 	if v.resistance == "" {
 		v.err = nil
@@ -152,8 +173,8 @@ func (v *SelectView) computeResult() {
 	if v.tolerance != "" {
 		var tolErr error
 		tol, tolErr = strconv.ParseFloat(v.tolerance, 64)
-		if tolErr != nil || tol < 0 {
-			v.err = fmt.Errorf("tolerance must be a non-negative number")
+		if tolErr != nil || tol < 0 || tol >= 100 {
+			v.err = fmt.Errorf("tolerance must be between 0 and 100 (exclusive)")
 			return
 		}
 	}
@@ -199,28 +220,15 @@ func (v *SelectView) renderResult() string {
 		return "Enter values to compute result."
 	}
 
-	builder := strings.Builder{}
+	var builder strings.Builder
 
 	fmt.Fprintf(&builder, "Selected: %.6gΩ\n\n", v.result.SelectedResistance)
 
 	builder.WriteString("Bands:\n")
-	builder.WriteString(formatBands(v.result.Bands))
+	builder.WriteString(renderBands(v.result.Bands))
 	builder.WriteString("\n")
 
-	if len(v.result.Assumptions) > 0 {
-		builder.WriteString("Assumptions:\n")
-		for _, a := range v.result.Assumptions {
-			fmt.Fprintf(&builder, "  - %s\n", a)
-		}
-	}
+	builder.WriteString(renderAssumptions(v.result.Assumptions))
 
 	return builder.String()
-}
-
-func formatBands(bands []resistor.Color) string {
-	var b strings.Builder
-	for _, c := range bands {
-		fmt.Fprintf(&b, "  %s\n", c)
-	}
-	return b.String()
 }

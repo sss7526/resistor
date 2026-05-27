@@ -264,7 +264,9 @@ func encodeStandardSMD(resistance float64) (string, error) {
 	for exp := 0; exp <= 9; exp++ {
 		scaled := resistance / math.Pow(10, float64(exp))
 		rounded := math.Round(scaled)
-		if scaled >= 10 && scaled < 100 && math.Abs(rounded-scaled) < eps {
+		// Use integer bounds on rounded (not float scaled) to prevent a value
+		// like scaled=99.9999999999 from rounding to 100 and overflowing %02d.
+		if rounded >= 10 && rounded < 100 && math.Abs(rounded-scaled) < eps {
 			return fmt.Sprintf("%02d%d", int(rounded), exp), nil
 		}
 	}
@@ -273,7 +275,7 @@ func encodeStandardSMD(resistance float64) (string, error) {
 	for exp := 0; exp <= 9; exp++ {
 		scaled := resistance / math.Pow(10, float64(exp))
 		rounded := math.Round(scaled)
-		if scaled >= 100 && scaled < 1000 && math.Abs(rounded-scaled) < eps {
+		if rounded >= 100 && rounded < 1000 && math.Abs(rounded-scaled) < eps {
 			return fmt.Sprintf("%03d%d", int(rounded), exp), nil
 		}
 	}
