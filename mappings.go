@@ -86,16 +86,6 @@ var ToleranceColor = map[float64]Color{
 	20.0: None,
 }
 
-// TempCoeffValue maps color to temperature coefficient in ppm/°C.
-var TempCoeffPPM = map[Color]int{
-	Brown:  100,
-	Red:    50,
-	Orange: 15,
-	Yellow: 25,
-	Blue:   10,
-	Violet: 5,
-}
-
 // TempCoeffValue maps 6th band color → temperature coefficient in ppm/°C.
 // Defined according to IEC 60062.
 var TempCoeffValue = map[Color]int{

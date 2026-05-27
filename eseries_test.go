@@ -83,6 +83,18 @@ func TestNearestStandard_RoundUp(t *testing.T) {
 			series:   E12,
 			expected: 5600,
 		},
+		{
+			name:     "E24 9.15Ω → 10Ω (decade boundary)",
+			input:    9.15,
+			series:   E24,
+			expected: 10.0,
+		},
+		{
+			name:     "E24 9150Ω → 10000Ω (decade boundary, kΩ scale)",
+			input:    9150,
+			series:   E24,
+			expected: 10000.0,
+		},
 	}
 
 	for _, tt := range tests {

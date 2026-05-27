@@ -252,14 +252,6 @@ func encodeEIA96(resistance float64) (string, error) {
 	return "", fmt.Errorf("value not representable in EIA‑96 series")
 }
 
-func findEIA96Multiplier(mult float64) (rune, bool) {
-	for k, v := range eia96Multipliers {
-		if math.Abs(v-mult) < 1e9 {
-			return k, true
-		}
-	}
-	return 0, false
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 // Standard Encoding

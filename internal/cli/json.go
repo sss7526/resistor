@@ -41,7 +41,7 @@ func Respond(jsonOutput bool, data interface{}, err error) error {
 	if err != nil {
 		if jsonOutput {
 			_ = OutputJSONError(err)
-			return nil
+			return err
 		}
 		return err
 	}

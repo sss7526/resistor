@@ -43,7 +43,7 @@ func NewMenu() *MenuView {
 	}
 
 	l := list.New(items, list.NewDefaultDelegate(), 0, 0)
-	l.Title = "Main Menu"
+	l.Title = "resistor-tui " + version
 	l.SetShowHelp(true)
 
 	return &MenuView{list: l}

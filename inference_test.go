@@ -1,6 +1,7 @@
 package resistor
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -272,6 +273,52 @@ func TestInferResistor_SMDPackagePower(t *testing.T) {
 			require.Equal(t, tt.expected, res.Spec.PowerWatts)
 		})
 	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// Decode Failure Visibility
+///////////////////////////////////////////////////////////////////////////////
+
+func TestInferResistor_InvalidBandColors(t *testing.T) {
+
+	// 4 bands with invalid colors — DecodeBands will fail
+	obs := ObservedResistor{
+		Bands: []Color{"purple", "ultraviolet", "chartreuse", "plaid"},
+	}
+
+	res, err := InferResistor(obs)
+	require.NoError(t, err)
+
+	var found bool
+	for _, a := range res.Meta.Assumptions {
+		if strings.HasPrefix(a, "Color band decode failed") {
+			found = true
+			break
+		}
+	}
+	require.True(t, found, "expected decode failure recorded in assumptions, got: %v", res.Meta.Assumptions)
+	require.Equal(t, 0.0, res.Spec.ResistanceOhms, "resistance should remain unknown after failed decode")
+}
+
+func TestInferResistor_InvalidSMDMarking(t *testing.T) {
+
+	// Marking that passes format check but is not decodable
+	obs := ObservedResistor{
+		Marking: "ABC", // letter-only, not a valid format
+	}
+
+	res, err := InferResistor(obs)
+	require.NoError(t, err)
+
+	var found bool
+	for _, a := range res.Meta.Assumptions {
+		if strings.HasPrefix(a, "SMD marking decode failed") {
+			found = true
+			break
+		}
+	}
+	require.True(t, found, "expected SMD decode failure recorded in assumptions, got: %v", res.Meta.Assumptions)
+	require.Equal(t, 0.0, res.Spec.ResistanceOhms)
 }
 
 ///////////////////////////////////////////////////////////////////////////////

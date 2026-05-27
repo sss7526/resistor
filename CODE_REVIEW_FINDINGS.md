@@ -400,16 +400,16 @@ Or simply use it in an existing string displayed by the TUI.
 
 | # | File | Status |
 |---|------|--------|
-| 1 | `internal/cli/json.go:43` — `--json` exits 0 on error | open |
-| 2 | `eseries.go:255` — `RoundUp` decade boundary | open |
-| 3 | `analysis.go:94` — Ohm's Law check dead | open |
-| 4 | `inference.go:113` — decode errors swallowed | open |
-| 5 | `mappings.go:90` — `TempCoeffPPM` unused duplicate | open |
-| 6 | `smd.go:255` — `findEIA96Multiplier` dead code | open |
-| 7 | `bands.go:22` — wrong error message | open |
-| 8 | `internal/cli/format.go:16` — `strings.Title` deprecated | open |
-| 9 | `smd_test.go:135` — G115 integer overflow, nonsensical test names | open |
-| 10 | `integration_test.go:27,42` — G204 false positives, need nolint | open |
-| 11 | `cmd/resistor-cli/cmd/helpers.go:31` — De Morgan's simplification | open |
-| 12 | `common.go:77,89` + `select.go:207` — WriteString+Sprintf pattern | open |
-| 13 | TUI stubs — 9 unused symbols until Analyze/SMD views implemented | open |
+| 1 | `internal/cli/json.go:43` — `--json` exits 0 on error | resolved |
+| 2 | `eseries.go:255` — `RoundUp` decade boundary | resolved |
+| 3 | `analysis.go:94` — Ohm's Law check dead | resolved |
+| 4 | `inference.go:113` — decode errors swallowed | resolved |
+| 5 | `mappings.go:90` — `TempCoeffPPM` unused duplicate | resolved |
+| 6 | `smd.go:255` — `findEIA96Multiplier` dead code | resolved |
+| 7 | `bands.go:22` — wrong error message | resolved |
+| 8 | `internal/cli/format.go:16` — `strings.Title` deprecated | resolved |
+| 9 | `smd_test.go:135` — G115 integer overflow, nonsensical test names | resolved |
+| 10 | `integration_test.go:27,42` — G204 false positives, need nolint | resolved |
+| 11 | `cmd/resistor-cli/cmd/helpers.go:31` — De Morgan's simplification | resolved |
+| 12 | `common.go:77,89` + `select.go:207` — WriteString+Sprintf pattern | resolved |
+| 13 | TUI stubs — 9 unused symbols until Analyze/SMD views implemented | resolved |

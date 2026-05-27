@@ -266,6 +266,12 @@ func NearestStandard(value float64, series ESeries, mode RoundingMode) (float64,
 		}
 	}
 
+	if mode == RoundUp {
+		// No candidate in this decade was >= normalized; step to first value of next decade.
+		result := base[0] * math.Pow(10, exponent+1)
+		return roundToSignificant(result, 6), nil
+	}
+
 	result := best * math.Pow(10, exponent)
 	result = roundToSignificant(result, 6)
 	return result, nil

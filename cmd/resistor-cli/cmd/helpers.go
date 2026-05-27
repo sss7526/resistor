@@ -28,7 +28,7 @@ func parseBands(input string) ([]resistor.Color, error) {
 		_, tolOK := resistor.ToleranceValue[color]
 		_, tempOK := resistor.TempCoeffValue[color]
 
-		if !(digitOK || multOK || tolOK || tempOK) {
+		if !digitOK && !multOK && !tolOK && !tempOK {
 			return nil, fmt.Errorf("invalid band color: %s", p)
 		}
 

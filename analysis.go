@@ -91,7 +91,7 @@ func AnalyzeResistor(input AnalysisInput) (AnalysisReport, error) {
 	if V > 0 && I > 0 {
 		// Both provided - check consistency
 		expectedV := I * R
-		if math.Abs(expectedV-V) > 1e6 {
+		if math.Abs(expectedV-V)/math.Max(math.Abs(V), 1e-12) > 0.01 {
 			warnings = append(warnings, AnalysisWarning{
 				Level:   WarningCaution,
 				Message: "Applied voltage and current inconsistent with Ohm's Law for given resistance",
