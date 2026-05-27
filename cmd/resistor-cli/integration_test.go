@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"os/exec"
@@ -24,7 +25,7 @@ func TestMain(m *testing.M) {
 
 	// Build the CLI from current directory (cmd/resistor-cli)
 	ldflags := "-X github.com/sss7526/resistor/cmd/resistor-cli/cmd.version=v0.1.0"
-	build := exec.Command("go", "build", "-ldflags", ldflags, "-o", binaryPath, ".")
+	build := exec.Command("go", "build", "-ldflags", ldflags, "-o", binaryPath, ".") //nolint:gosec // intentional subprocess in test setup
 	build.Dir = "." // current directory
 	if err := build.Run(); err != nil {
 		panic(err)
@@ -39,7 +40,7 @@ func TestMain(m *testing.M) {
 }
 
 func runCLI(t *testing.T, args ...string) (string, error) {
-	cmd := exec.Command(binary, args...)
+	cmd := exec.Command(binary, args...) //nolint:gosec // intentional subprocess in test helper
 	out, err := cmd.CombinedOutput()
 	return string(out), err
 }
@@ -174,4 +175,26 @@ func TestCLI_SMD_JSON(t *testing.T) {
 	var parsed map[string]interface{}
 	require.NoError(t, json.Unmarshal([]byte(out), &parsed))
 	require.Equal(t, true, parsed["success"])
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// JSON exit code on error
+///////////////////////////////////////////////////////////////////////////////
+
+func TestCLI_JSON_ExitCodeOnError(t *testing.T) {
+	cmd := exec.Command(binary, "smd", "decode", "XYZ", "--json") //nolint:gosec // intentional subprocess in test
+	var stdout bytes.Buffer
+	cmd.Stdout = &stdout
+	err := cmd.Run()
+
+	require.Error(t, err, "command should exit non-zero on failure with --json")
+
+	exitErr, ok := err.(*exec.ExitError)
+	require.True(t, ok, "expected *exec.ExitError")
+	require.NotEqual(t, 0, exitErr.ExitCode(), "exit code should be non-zero")
+
+	var parsed map[string]interface{}
+	require.NoError(t, json.Unmarshal(stdout.Bytes(), &parsed))
+	require.Equal(t, false, parsed["success"])
+	require.NotEmpty(t, parsed["error"])
 }

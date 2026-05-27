@@ -204,10 +204,7 @@ func (v *SelectView) renderResult() string {
 
 	builder := strings.Builder{}
 
-	builder.WriteString(fmt.Sprintf(
-		"Selected: %.6gΩ\n\n",
-		v.result.SelectedResistance,
-	))
+	fmt.Fprintf(&builder, "Selected: %.6gΩ\n\n", v.result.SelectedResistance)
 
 	builder.WriteString("Bands:\n")
 	builder.WriteString(formatBands(v.result.Bands))
@@ -216,7 +213,7 @@ func (v *SelectView) renderResult() string {
 	if len(v.result.Assumptions) > 0 {
 		builder.WriteString("Assumptions:\n")
 		for _, a := range v.result.Assumptions {
-			builder.WriteString(fmt.Sprintf("  - %s\n", a))
+			fmt.Fprintf(&builder, "  - %s\n", a)
 		}
 	}
 
@@ -224,9 +221,9 @@ func (v *SelectView) renderResult() string {
 }
 
 func formatBands(bands []resistor.Color) string {
-	out := ""
-	for _, b := range bands {
-		out += fmt.Sprintf("  %s\n", b)
+	var b strings.Builder
+	for _, c := range bands {
+		fmt.Fprintf(&b, "  %s\n", c)
 	}
-	return out
+	return b.String()
 }

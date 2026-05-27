@@ -10,7 +10,7 @@ import (
 ///////////////////////////////////////////////////////////////////////////////
 
 // ErrInvalidBandCount indicates that the provided band slice
-// does not contain 4 or 5 entries.
+// does not contain 4, 5, or 6 entries.
 //
 // 4-band format:
 //
@@ -19,7 +19,11 @@ import (
 // 5-band format:
 //
 //	digit, digit, digit, multiplier, tolerance
-var ErrInvalidBandCount = errors.New("invalid number of bands (must be 4 or 5)")
+//
+// 6-band format:
+//
+//	digit, digit, digit, multiplier, tolerance, temp coefficient
+var ErrInvalidBandCount = errors.New("invalid number of bands (must be 4, 5, or 6)")
 
 // ErrInvalidDigitColor indicates that a band expected to represent
 // a significant digit does not map to a valid digit color (0–9).
@@ -47,16 +51,16 @@ var ErrUnencodableValue = errors.New("resistance cannot be encoded in 4 or 5 ban
 ///////////////////////////////////////////////////////////////////////////////
 
 /*
-DecodeBands converts a slice of 4 or 5 color bands into a ResistorSpec.
+DecodeBands converts a slice of 4, 5, or 6 color bands into a ResistorSpec.
 
 Only the following fields of ResistorSpec are populated:
 
   - ResistanceOhms
   - TolerancePct
+  - TempCoeffPPM (6-band only)
 
 No inference is performed.
 No power rating is assumed.
-No temperature coefficient is extracted (6-band not supported yet).
 
 Resistor Band Structure (IEC 60062):
 
@@ -74,6 +78,15 @@ Resistor Band Structure (IEC 60062):
 	Band 3: Third significant digit
 	Band 4: Multiplier
 	Band 5: Tolerance
+
+6-band resistor:
+
+	Band 1: First significant digit
+	Band 2: Second significant digit
+	Band 3: Third significant digit
+	Band 4: Multiplier
+	Band 5: Tolerance
+	Band 6: Temperature coefficient
 
 Example (4-band):
 

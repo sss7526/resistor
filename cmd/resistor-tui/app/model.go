@@ -4,17 +4,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-type viewState int
-
-const (
-	viewMenu viewState = iota
-	viewSelect
-	viewInfer
-	viewAnalyze
-	viewSMD
-	viewQuit
-)
-
 // AppModel is the application shell and view router.
 //
 // It does not implement any business logic.

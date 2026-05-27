@@ -143,6 +143,15 @@ fuzz-series:
 fuzz: fuzz-bands fuzz-smd fuzz-series
 
 # ---------------------------------------
+# Lint
+# ---------------------------------------
+
+.PHONY: lint
+lint:
+	@echo "→ Running golangci-lint"
+	golangci-lint run --verbose --color always --enable-only=errcheck,govet,ineffassign,staticcheck,unused,gosec --timeout=5m
+
+# ---------------------------------------
 # Clean
 # ---------------------------------------
 
@@ -196,6 +205,7 @@ help:
 	@echo ""
 	@echo "Other"
 	@echo "  fmt                 Run go fmt"
+	@echo "  lint                Run golangci-lint (errcheck,govet,ineffassign,staticcheck,unused,gosec)"
 	@echo "  clean               Remove bin/, test cache, and fuzz artifacts"
 	@echo "  help                Show this message"
 	@echo ""

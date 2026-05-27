@@ -1,8 +1,10 @@
 package resistor
 
 import (
-	"github.com/stretchr/testify/require"
+	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -132,7 +134,7 @@ func TestSMD_Encode_EIA96(t *testing.T) {
 	}
 
 	for _, val := range tests {
-		t.Run("EIA96 encode "+string(rune(int(val))), func(t *testing.T) {
+		t.Run(fmt.Sprintf("EIA96 encode %.0f", val), func(t *testing.T) {
 
 			code, err := EncodeSMD(val, SMDEIA96)
 			require.NoError(t, err)

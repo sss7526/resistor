@@ -60,6 +60,40 @@ func TestAnalyzeResistor_DeratingWarnings(t *testing.T) {
 	require.NotEmpty(t, report.Warnings)
 }
 
+func TestAnalyzeResistor_OhmsLawConsistency(t *testing.T) {
+
+	// V and I that disagree by more than 1%: V=10, I=0.001, R=100 → expected V=0.1
+	inconsistent := AnalysisInput{
+		Spec:           ResistorSpec{ResistanceOhms: 100},
+		AppliedVoltage: 10,
+		AppliedCurrent: 0.001,
+	}
+	report, err := AnalyzeResistor(inconsistent)
+	require.NoError(t, err)
+
+	var found bool
+	for _, w := range report.Warnings {
+		if w.Level == WarningCaution {
+			found = true
+			break
+		}
+	}
+	require.True(t, found, "expected a WarningCaution for inconsistent V/I")
+
+	// V and I that agree within 1%: V=10, I=0.1, R=100 → exactly consistent
+	consistent := AnalysisInput{
+		Spec:           ResistorSpec{ResistanceOhms: 100},
+		AppliedVoltage: 10,
+		AppliedCurrent: 0.1,
+	}
+	report2, err := AnalyzeResistor(consistent)
+	require.NoError(t, err)
+
+	for _, w := range report2.Warnings {
+		require.NotEqual(t, WarningCaution, w.Level, "consistent V/I should not produce a WarningCaution from Ohm's Law check")
+	}
+}
+
 func TestAnalyzeResistor_NoInputs(t *testing.T) {
 
 	input := AnalysisInput{

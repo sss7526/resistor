@@ -111,13 +111,15 @@ func InferResistor(obs ObservedResistor) (InferenceResult, error) {
 	if len(obs.Bands) == 4 || len(obs.Bands) == 5 || len(obs.Bands) == 6 {
 		spec, err := DecodeBands(obs.Bands)
 		if err == nil {
-
 			result.Spec = spec
 			assumptions = append(assumptions,
 				"Resistance and tolerance determined from color bands")
 
 			// Deterministic fact → weight = 1.0
 			confidence = 1 - (1-confidence)*(1-1.0)
+		} else {
+			assumptions = append(assumptions,
+				"Color band decode failed: "+err.Error())
 		}
 	}
 
@@ -125,13 +127,14 @@ func InferResistor(obs ObservedResistor) (InferenceResult, error) {
 	if obs.Marking != "" && result.Spec.ResistanceOhms == 0 {
 		spec, err := DecodeSMD(obs.Marking)
 		if err == nil {
-
 			result.Spec.ResistanceOhms = spec.ResistanceOhms
-
 			assumptions = append(assumptions,
 				"Resistance determined from SMD marking")
 
 			confidence = 1 - (1-confidence)*(1-1.0)
+		} else {
+			assumptions = append(assumptions,
+				"SMD marking decode failed: "+err.Error())
 		}
 	}
 
