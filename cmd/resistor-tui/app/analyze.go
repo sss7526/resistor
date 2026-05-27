@@ -7,10 +7,16 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
-	"github.com/charmbracelet/lipgloss"
 
 	"github.com/sss7526/resistor"
 )
+
+// analyzeInputs holds a snapshot of all AnalyzeView form fields.
+// Using a named struct (rather than [N]string) means the compiler will flag
+// any mismatch when fields are added or removed.
+type analyzeInputs struct {
+	resistance, voltage, current, power, tolerance string
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // AnalyzeView
@@ -41,7 +47,8 @@ type AnalyzeView struct {
 	tolerance  string
 
 	// Input snapshot for memoization: skip recompute when nothing changed.
-	snapshot [5]string
+	// Named struct so the compiler enforces field count on every update.
+	snapshot analyzeInputs
 
 	// Computed result; nil means no result has been computed yet.
 	result *resistor.AnalysisReport
@@ -146,7 +153,7 @@ func (v *AnalyzeView) Update(msg tea.Msg) (View, tea.Cmd) {
 
 func (v *AnalyzeView) computeResult() {
 	// Memoize: skip if no input field has changed since last run.
-	snap := [5]string{v.resistance, v.voltage, v.current, v.power, v.tolerance}
+	snap := analyzeInputs{v.resistance, v.voltage, v.current, v.power, v.tolerance}
 	if snap == v.snapshot {
 		return
 	}
@@ -179,8 +186,8 @@ func (v *AnalyzeView) computeResult() {
 
 	if v.tolerance != "" {
 		tol, err := strconv.ParseFloat(v.tolerance, 64)
-		if err != nil || tol <= 0 {
-			v.err = fmt.Errorf("tolerance must be a positive number")
+		if err != nil || tol <= 0 || tol >= 100 {
+			v.err = fmt.Errorf("tolerance must be between 0 and 100 (exclusive)")
 			return
 		}
 		spec.TolerancePct = tol
@@ -220,6 +227,9 @@ func (v *AnalyzeView) computeResult() {
 ///////////////////////////////////////////////////////////////////////////////
 
 func (v *AnalyzeView) View() string {
+	if v.width <= 0 {
+		return ""
+	}
 	return splitLayout(v.width, v.form.View(), v.renderResult())
 }
 
@@ -229,9 +239,7 @@ func (v *AnalyzeView) View() string {
 
 func (v *AnalyzeView) renderResult() string {
 	if v.err != nil {
-		return lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FF5555")).
-			Render(v.err.Error())
+		return errStyle.Render(v.err.Error())
 	}
 
 	if v.result == nil {

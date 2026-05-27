@@ -278,9 +278,7 @@ func (v *InferView) View() string {
 func (v *InferView) renderResult() string {
 
 	if v.err != nil {
-		return lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FF5555")).
-			Render(v.err.Error())
+		return errStyle.Render(v.err.Error())
 	}
 
 	if v.result.Spec.ResistanceOhms == 0 {

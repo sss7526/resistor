@@ -71,7 +71,10 @@ func enumOptions[T interface {
 	return opts
 }
 
-func renderBands(bands []resistor.Color) string { //nolint:unused // used by Analyze/SMD views when implemented
+// errStyle is the shared error text style used by all result panels.
+var errStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF5555"))
+
+func renderBands(bands []resistor.Color) string { //nolint:unused // used by SMD view when implemented
 	var b strings.Builder
 	for _, c := range bands {
 		fmt.Fprintf(&b, "  %s\n", c)

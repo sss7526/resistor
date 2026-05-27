@@ -8,8 +8,6 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
 
-	"github.com/charmbracelet/lipgloss"
-
 	"github.com/sss7526/resistor"
 )
 
@@ -60,12 +58,14 @@ type SelectView struct {
 ///////////////////////////////////////////////////////////////////////////////
 
 func NewSelectView() *SelectView {
-
 	v := &SelectView{}
-
 	v.series = resistor.E24
 	v.rounding = resistor.RoundNearest
+	v.buildForm()
+	return v
+}
 
+func (v *SelectView) buildForm() {
 	v.form = huh.NewForm(
 		huh.NewGroup(
 			huh.NewInput().
@@ -87,8 +87,9 @@ func NewSelectView() *SelectView {
 				Value(&v.rounding),
 		),
 	)
-
-	return v
+	if v.width > 0 {
+		v.form = v.form.WithWidth(v.width/2 - 2)
+	}
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -97,10 +98,7 @@ func NewSelectView() *SelectView {
 
 func (v *SelectView) Resize(width, height int) {
 	v.BaseView.Resize(width, height)
-
-	leftWidth := width / 2
-
-	v.form = v.form.WithWidth(leftWidth - 2)
+	v.form = v.form.WithWidth(width/2 - 2)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -116,19 +114,17 @@ func (v *SelectView) Init() tea.Cmd {
 ///////////////////////////////////////////////////////////////////////////////
 
 func (v *SelectView) Update(msg tea.Msg) (View, tea.Cmd) {
-	switch msg := msg.(type) {
-
-	case tea.KeyMsg:
-
-		if msg.String() == "esc" {
-			return NewMenu(), nil
-		}
-	}
-
-	var cmd tea.Cmd
-
 	updated, cmd := v.form.Update(msg)
 	v.form = updated.(*huh.Form)
+
+	if v.form.State == huh.StateCompleted {
+		v.buildForm()
+		return v, v.form.Init()
+	}
+
+	if key, ok := msg.(tea.KeyMsg); ok && key.String() == "esc" {
+		return NewMenu(), nil
+	}
 
 	v.computeResult()
 
@@ -178,12 +174,10 @@ func (v *SelectView) computeResult() {
 ///////////////////////////////////////////////////////////////////////////////
 
 func (v *SelectView) View() string {
-
-	formView := v.form.View()
-
-	resultView := v.renderResult()
-
-	return splitLayout(v.width, formView, resultView)
+	if v.width <= 0 {
+		return ""
+	}
+	return splitLayout(v.width, v.form.View(), v.renderResult())
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -193,9 +187,7 @@ func (v *SelectView) View() string {
 func (v *SelectView) renderResult() string {
 
 	if v.err != nil {
-		return lipgloss.NewStyle().
-			Foreground(lipgloss.Color("#FF5555")).
-			Render(v.err.Error())
+		return errStyle.Render(v.err.Error())
 	}
 
 	if v.result.SelectedResistance == 0 {
