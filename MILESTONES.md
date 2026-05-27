@@ -240,7 +240,7 @@ type InferenceRule struct {
 
 ---
 
-# Milestone 9 — CLI
+# Milestone 9 — CLI ✓
 
 **Goal:** A complete, tested command-line interface covering all core library operations.
 
@@ -256,11 +256,6 @@ type InferenceRule struct {
 | `version` | Print version |
 
 All commands support `--json` for machine-readable output.
-
-### Current State:
-All commands are implemented. The `analyze` human-readable output currently omits
-derating threshold and worst-case resistance bounds, which the library computes
-but the CLI does not print.
 
 ### Done When:
 - Human-readable output for all commands reflects the full data returned by the library,
