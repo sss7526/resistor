@@ -11,8 +11,8 @@ The library has no UI dependencies and is suitable for use in other Go projects,
 - [Library](#library)
 - [CLI](#cli)
 - [TUI](#tui)
-- [Building](#building)
-- [Testing](#testing)
+- [Development](#development)
+- [Contributing](#contributing)
 - [License](#license)
 
 ---
@@ -152,11 +152,10 @@ The CLI provides non-interactive access to all library operations.
 go install github.com/sss7526/resistor/cmd/resistor-cli@latest
 ```
 
-Or build from source:
+Or, if you have the repository cloned:
 
 ```
-make build-cli
-./bin/resistor-cli --help
+make install-cli
 ```
 
 ### Commands
@@ -201,31 +200,30 @@ All commands accept `--json` for machine-readable output.
 The TUI provides an interactive terminal interface for the same operations.
 
 ```
-make build-tui
-./bin/resistor-tui
-```
-
-Or install:
-
-```
 go install github.com/sss7526/resistor/cmd/resistor-tui@latest
+```
+
+Or, if you have the repository cloned:
+
+```
+make install-tui
 ```
 
 Navigate with arrow keys, confirm with Enter, and return to the menu with Escape. Press `q` or `Ctrl+C` to quit.
 
 ---
 
-## Building
+## Development
 
-Requires Go 1.21 or later.
+Requires Go 1.21 or later. Clone the repository and use the Makefile targets.
+
+Build binaries locally without installing:
 
 ```
-make build        # build both binaries to bin/
-make build-cli    # build CLI only
-make build-tui    # build TUI only
+make build        # build both to bin/
+make build-cli
+make build-tui
 ```
-
----
 
 ## Testing
 
@@ -242,6 +240,12 @@ Fuzz testing:
 make fuzz         # run all fuzz targets for 10 seconds each
 make fuzz FUZZTIME=60s
 ```
+
+---
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 
