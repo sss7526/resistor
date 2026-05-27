@@ -14,6 +14,8 @@ CLI := resistor-cli
 CLI_PATH := ./cmd/resistor-cli
 TUI := resistor-tui
 TUI_PATH := ./cmd/resistor-tui
+WASM_PATH := ./cmd/resistor-wasm
+WEBDIR := web
 VERSION := v0.1.0
 
 # Default fuzz time (override via: make fuzz FUZZTIME=30s)
@@ -27,7 +29,7 @@ FUZZTIME ?= 10s
 all: fmt test build
 
 .PHONY: build
-build: build-cli build-tui
+build: build-cli build-tui build-wasm
 
 # Format code
 .PHONY: fmt
@@ -91,6 +93,18 @@ build-tui:
 install-tui:
 	@echo "→ Installing TUI"
 	go install $(TUI_PATH)
+
+# ---------------------------------------
+# WASM Build Targets
+# ---------------------------------------
+
+.PHONY: build-wasm
+build-wasm:
+	@echo "→ Building WASM module"
+	@mkdir -p $(WEBDIR)
+	GOOS=js GOARCH=wasm go build -o $(WEBDIR)/resistor.wasm $(WASM_PATH)
+	cp "$$(go env GOROOT)/lib/wasm/wasm_exec.js" $(WEBDIR)/wasm_exec.js
+	@echo "→ Artifacts: $(WEBDIR)/resistor.wasm  $(WEBDIR)/wasm_exec.js"
 
 # ---------------------------------------
 # Unit Test Subsets
@@ -163,6 +177,7 @@ clean:
 	rm -rf $(BINDIR)
 	rm -f $(GOBIN)/$(CLI)
 	rm -f $(GOBIN)/$(TUI)
+	rm -f $(WEBDIR)/resistor.wasm $(WEBDIR)/wasm_exec.js
 
 # ---------------------------------------
 # Help
@@ -176,9 +191,10 @@ help:
 	@echo "Default target: all (fmt + test + build)"
 	@echo ""
 	@echo "Build"
-	@echo "  build               Build both binaries to bin/"
+	@echo "  build               Build CLI, TUI, and WASM"
 	@echo "  build-cli           Build CLI binary to bin/"
 	@echo "  build-tui           Build TUI binary to bin/"
+	@echo "  build-wasm          Build WASM module to web/"
 	@echo "  install-cli         Install CLI to GOPATH/bin"
 	@echo "  install-tui         Install TUI to GOPATH/bin"
 	@echo ""

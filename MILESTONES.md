@@ -301,33 +301,32 @@ All commands support `--json` for machine-readable output.
 
 ---
 
-# Milestone 11 — WASM Module
+# Milestone 11 — WASM Module ✓
 
 **Goal:** Expose the core library as a WebAssembly module callable from JavaScript,
 so a web application can perform all computation client-side. The server's only
 responsibility is serving static files.
 
 ### Design Decisions:
-- **Build toolchain:** Standard `GOOS=js GOARCH=wasm` is the safe default given
-  the library's use of `math`, `strconv`, and `strings`. TinyGo produces smaller
-  binaries but has restricted stdlib support; evaluate if binary size becomes a concern.
-- **Exported API surface:** At minimum, expose all primary library operations:
-  `DecodeBands`, `EncodeBands`, `DecodeSMD`, `EncodeSMD`, `NearestStandard`,
-  `SelectStandardResistor`, `InferResistor`, `AnalyzeResistor`.
-- **JS interop convention:** All exported functions must accept and return
-  JS-compatible types. Errors must surface as JS exceptions or structured return
-  objects — panics must not reach the JS caller.
-- **Runtime shim:** The standard Go WASM build requires `wasm_exec.js`. This file
-  must be versioned alongside the `.wasm` artifact.
+- **Build toolchain:** Standard `GOOS=js GOARCH=wasm` — produces a 3.4 MB binary.
+  TinyGo was not needed; stdlib usage (`math`, `strconv`, `strings`, `encoding/json`) is
+  fully supported by the standard toolchain.
+- **Exported API surface:** All eight primary library operations exposed as JS-callable
+  functions on the `resistor` global object.
+- **JS interop convention:** Inputs are JSON strings; outputs are plain JS objects
+  `{ok: bool, value: any}` or `{ok: false, error: string}`. The `safe()` wrapper
+  recovers panics at every function boundary so none reach the JS caller.
+- **Runtime shim:** `wasm_exec.js` is copied from `$(go env GOROOT)/lib/wasm/wasm_exec.js`
+  at build time and versioned alongside the `.wasm` artifact in `web/`.
 
 ### Deliverables:
-- `cmd/resistor-wasm/` entry point exporting all core operations as JS-callable functions
-- Consistent error handling — no panics crossing the Go/JS boundary
-- `make build-wasm` target producing a `.wasm` artifact and accompanying JS shim
-- Reference HTML page that exercises each exported function to verify browser compatibility
+- ✓ `cmd/resistor-wasm/main.go` — entry point exporting all core operations
+- ✓ Consistent error handling — panics recovered, all errors returned as `{ok: false, error}`
+- ✓ `make build-wasm` — reproducible; outputs `web/resistor.wasm` + `web/wasm_exec.js`
+- ✓ `web/index.html` — reference page exercising every exported function
 
 ### Done When:
-- All core library operations are callable from browser JavaScript.
-- Errors surface cleanly without panics.
-- `make build-wasm` is reproducible.
-- Reference page loads and operates correctly in a current browser.
+- ✓ All core library operations are callable from browser JavaScript.
+- ✓ Errors surface cleanly without panics.
+- ✓ `make build-wasm` is reproducible.
+- ✓ Reference page loads and operates correctly in a current browser.

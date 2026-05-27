@@ -10,6 +10,7 @@ The library has no UI dependencies and is suitable for use in other Go projects,
 
 - [Library](#library)
 - [CLI](#cli)
+- [WASM](#wasm)
 - [TUI](#tui)
 - [Development](#development)
 - [Contributing](#contributing)
@@ -192,6 +193,64 @@ resistor-cli smd encode 4700
 ```
 
 All commands accept `--json` for machine-readable output.
+
+---
+
+## WASM
+
+The WASM module exposes all core library operations as browser-callable JavaScript functions.
+
+```
+make build-wasm
+```
+
+This produces `web/resistor.wasm` and a versioned `web/wasm_exec.js` shim copied from the Go installation.
+
+Serve the `web/` directory from any static file server:
+
+```
+cd web && python3 -m http.server 8080
+```
+
+Then open `http://localhost:8080` for the reference page that exercises every exported function.
+
+### JavaScript API
+
+All functions live on the `resistor` global object. Each returns `{ok: true, value: ...}` on success or `{ok: false, error: "..."}` on failure. Inputs are JSON strings; outputs are plain JavaScript objects.
+
+```js
+// Decode color bands
+resistor.decodeBands('["green","brown","brown","gold"]')
+// → {ok: true, value: {ResistanceOhms: 510, TolerancePct: 5, ...}}
+
+// Encode resistance to bands
+resistor.encodeBands('{"resistanceOhms":510,"tolerancePct":5}')
+// → {ok: true, value: ["green","brown","brown","gold"]}
+
+// Decode SMD marking
+resistor.decodeSMD("472")
+// → {ok: true, value: {ResistanceOhms: 4700, ...}}
+
+// Encode resistance to SMD marking
+resistor.encodeSMD('{"resistance":4700,"mode":"auto"}')
+// → {ok: true, value: "472"}
+
+// Snap to nearest standard value
+resistor.nearestStandard('{"value":487,"series":"E24","mode":"nearest"}')
+// → {ok: true, value: 510}
+
+// Full resistor selection (snap + encode bands)
+resistor.selectStandardResistor('{"resistance":487}')
+// → {ok: true, value: {SelectedResistance: 510, Bands: [...], ...}}
+
+// Infer from physical observations
+resistor.inferResistor('{"bands":["brown","black","red","gold"],"bodyColor":"blue","lengthMM":6.3}')
+// → {ok: true, value: {Spec: {...}, Meta: {Confidence: 0.92, Assumptions: [...]}}}
+
+// Electrical analysis
+resistor.analyzeResistor('{"spec":{"resistanceOhms":100,"powerWatts":0.25,"tolerancePct":5},"appliedVoltage":10}')
+// → {ok: true, value: {Current: 0.1, PowerDissipation: 0.1, Warnings: [...], ...}}
+```
 
 ---
 
