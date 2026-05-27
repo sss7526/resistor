@@ -9,6 +9,7 @@ endif
 
 # Package name (auto-detect)
 PKG := ./...
+BINDIR := bin
 CLI := resistor-cli
 CLI_PATH := ./cmd/resistor-cli
 TUI := resistor-tui
@@ -24,6 +25,9 @@ FUZZTIME ?= 10s
 
 .PHONY: all
 all: fmt test build
+
+.PHONY: build
+build: build-cli build-tui
 
 # Format code
 .PHONY: fmt
@@ -52,10 +56,10 @@ test-all: test test-cli
 
 .PHONY: smoke
 smoke: build
-	./$(CLI) select 487 > /dev/null
-	./$(CLI) infer --bands brown,black,red,gold > /dev/null
-	./$(CLI) analyze --r 100 --v 10 > /dev/null
-	./$(CLI) smd decode 472 > /dev/null
+	./$(BINDIR)/$(CLI) select 487 > /dev/null
+	./$(BINDIR)/$(CLI) infer --bands brown,black,red,gold > /dev/null
+	./$(BINDIR)/$(CLI) analyze --r 100 --v 10 > /dev/null
+	./$(BINDIR)/$(CLI) smd decode 472 > /dev/null
 	@echo "Smoke tests passed"
 
 # ---------------------------------------
@@ -65,7 +69,8 @@ smoke: build
 .PHONY: build-cli
 build-cli:
 	@echo "→ Building CLI binary"
-	go build -o $(CLI) -ldflags "-X 'github.com/sss7526/resistor/cmd/resistor-cli/cmd.version=$(VERSION)'" $(CLI_PATH)
+	@mkdir -p $(BINDIR)
+	go build -o $(BINDIR)/$(CLI) -ldflags "-X 'github.com/sss7526/resistor/cmd/resistor-cli/cmd.version=$(VERSION)'" $(CLI_PATH)
 
 .PHONY: install-cli
 install-cli:
@@ -79,7 +84,8 @@ install-cli:
 .PHONY: build-tui
 build-tui:
 	@echo "→ Building TUI binary"
-	go build -o $(TUI) -ldflags "-X 'github.com/sss7526/resistor/cmd/resistor-tui/app.version=$(VERSION)'" $(TUI_PATH)
+	@mkdir -p $(BINDIR)
+	go build -o $(BINDIR)/$(TUI) -ldflags "-X 'github.com/sss7526/resistor/cmd/resistor-tui/app.version=$(VERSION)'" $(TUI_PATH)
 
 .PHONY: install-tui
 install-tui:
@@ -145,8 +151,7 @@ clean:
 	@echo "→ Cleaning fuzz cache"
 	go clean -testcache
 	rm -rf testdata/fuzz
-	rm -f $(CLI)
-	rm -f $(TUI)
+	rm -rf $(BINDIR)
 	rm -f $(GOBIN)/$(CLI)
 	rm -f $(GOBIN)/$(TUI)
 
@@ -159,9 +164,11 @@ help:
 	@echo ""
 	@echo "Available targets:"
 	@echo "  make fmt            - Run go fmt"
-	@echo "  make build-cli      - Build CLI binary"
-	@echo "  make build-tui      - Build TUI binary"
-	@echo "  make install        - Install CLI to GOPATH/bin"
+	@echo "  make build          - Build both binaries to bin/"
+	@echo "  make build-cli      - Build CLI binary to bin/"
+	@echo "  make build-tui      - Build TUI binary to bin/"
+	@echo "  make install-cli    - Install CLI to GOPATH/bin"
+	@echo "  make install-tui    - Install TUI to GOPATH/bin"
 	@echo "  make test           - Run all unit tests"
 	@echo "  make test-short     - Run short tests"
 	@echo "  make test-bands     - Run band tests only"
