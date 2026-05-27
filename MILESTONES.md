@@ -234,9 +234,10 @@ type InferenceRule struct {
 - Benchmarks on hot paths (NearestStandard, DecodeBands, InferResistor)
 
 ### Done When:
-- No exported symbols are expected to change.
-- All deterministic operations have exhaustive unit tests.
-- Public API is documented well enough for a third-party consumer.
+- ✓ No exported symbols are expected to change.
+- ✓ All deterministic operations have exhaustive unit tests.
+- ✓ Public API is documented well enough for a third-party consumer.
+- ✓ Benchmarks on hot paths (`NearestStandard`, `DecodeBands`, `InferResistor`).
 
 ---
 
