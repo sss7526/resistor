@@ -276,38 +276,36 @@ All commands support `--json` for machine-readable output.
 | Menu | Complete |
 | Select Resistor | Complete |
 | Infer Resistor | Complete |
-| Analyze Resistor | Not implemented (placeholder) |
-| SMD Tools | Not implemented (placeholder) |
+| Analyze Resistor | Complete |
+| SMD Tools | Complete |
 
-### Remaining Deliverables:
+### Remaining Work:
 
-**AnalyzeView:**
-- Form inputs: resistance, applied voltage, applied current, rated power, tolerance
-- Result panel: power dissipation, voltage drop, current, derating threshold,
-  worst-case resistance bounds, color-coded warnings
+**InferView structural rebuild (sole blocker):**
+- `InferView` rebuilds the entire `huh` form on every Up/Down arrow keypress
+  in the Input Mode and Band Count selects, because huh writes through the
+  bound pointer on each navigation key.
+- The same defect existed in `SMDView` and was fixed by deferring the
+  structural rebuild until Enter/Tab confirms the selection. The identical
+  fix applies to `InferView`.
 
-**SMDView:**
-- Mode select: decode or encode
-- Decode: marking input → resistance output
-- Encode: resistance input → SMD marking output
-
-### Known Stability Issues:
-- `InferView` rebuilds the entire `huh` form when input mode (Bands/SMD) or band
-  count changes. This resets form state and causes visual artifacts. The rebuild
-  is currently the only mechanism for structural field changes but needs hardening.
-- Terminal resize must propagate to newly constructed views immediately on
-  transition. The current `AppModel` resize path is correct but fragile — a newly
-  created view that does not receive a resize message before its first render
-  will have zero-width layout.
-- `huh` forms stop processing keypresses once all fields are filled (form
-  completion state). Views must guard against this to remain navigable after
-  a result is computed.
+### Resolved Stability Issues:
+- `huh` forms going blank on StateCompleted: all views now detect
+  `StateCompleted` and call `buildForm()` + `form.Init()` to stay live.
+- `huh` Select filter mode ESC ejecting the user: ESC is now checked
+  before `form.Update` in all form-based views (Select, Analyze, SMD).
+- Arrow-key navigation triggering structural rebuilds: fixed in SMDView
+  by deferring to Enter/Tab; same fix still needed in InferView.
+- Snapshot memoization: all views now use named snapshot structs to skip
+  recomputation when inputs are unchanged.
+- `encodeStandardSMD` float boundary overflow: integer bounds check on
+  `rounded` prevents wrong-length SMD markings at the 100/1000 boundary.
 
 ### Done When:
-- All four views are functional.
-- Navigation between all views works without state corruption.
-- Layout is stable across terminal resize events.
-- `InferView` mode and band count changes do not cause visible form state loss.
+- ✓ All four views are functional.
+- ✓ Navigation between all views works without state corruption.
+- ✓ Layout is stable across terminal resize events.
+- ✗ `InferView` mode and band count changes do not cause visible form state loss.
 
 ---
 
