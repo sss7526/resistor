@@ -739,6 +739,25 @@ Add to `build-server` Makefile target:
 -ldflags "-X 'main.version=$(VERSION)' -s -w"
 ```
 
+**Frontend version display:**
+
+On `DOMContentLoaded`, `app.js` fetches `/health` and renders the version string
+in the footer alongside the existing GitHub and pkg.go.dev links:
+
+```js
+fetch('/health')
+  .then(r => r.json())
+  .then(d => {
+    const el = document.getElementById('app-version')
+    if (el && d.version) el.textContent = d.version
+  })
+  .catch(() => {})   // silently ignore — version display is non-critical
+```
+
+`app.html` footer gets a `<span id="app-version"></span>` placeholder. Styled
+muted/small so it doesn't compete with the CTA links. Shows `v0.1.0`, `dev`,
+or nothing on fetch failure.
+
 **Local Docker builds (for dev/testing):**
 
 `.git` is not in the Docker build context so `git describe` cannot run inside
@@ -917,6 +936,7 @@ restart with timestamps, providing a lightweight audit trail.
   passes (verified on first real Dependabot PR).
 - All three binaries report the correct release tag: `resistor-cli version`,
   `resistor-tui` title bar, `resistor-server -version` and `/health`.
+- Web UI footer displays the version fetched from `/health` on page load.
 - No manual tagging, version editing, binary uploading, or docker pushing is
   required for any future release — merging the Release PR is the only action.
 - EC2 instance bootstrapped: Elastic IP assigned, Route 53 A record resolves,
