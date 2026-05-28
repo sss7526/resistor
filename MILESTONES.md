@@ -335,23 +335,7 @@ responsibility is serving static files.
 
 ---
 
-# Milestone 12 — Version Release
-
-**Goal:** Cut a tagged `v0.1.0` release so the `go get` path in the README resolves
-and the module is addressable by version from external projects.
-
-### Deliverables:
-- `v0.1.0` git tag pushed to the remote
-- GitHub release created with release notes summarising the API surface
-- `go get github.com/sss7526/resistor@v0.1.0` resolves correctly via the module proxy
-
-### Done When:
-- Tag exists on the remote and is visible via `go list -m github.com/sss7526/resistor@v0.1.0`.
-- Release notes cover all public API entry points.
-
----
-
-# Milestone 13 — WASM Binary Size Reduction
+# Milestone 12 — WASM Binary Size Reduction
 
 **Goal:** Reduce the WASM binary from ~3.4 MB to under 500 KB using TinyGo,
 making it practical to serve over the web without a loading penalty.
@@ -372,7 +356,7 @@ making it practical to serve over the web without a loading penalty.
 
 ---
 
-# Milestone 14 — Web Application
+# Milestone 13 — Web Application
 
 **Goal:** Build a usable single-page web application on top of the WASM module.
 The reference page (`web/index.html`) is a correctness harness; this milestone
@@ -399,7 +383,7 @@ produces a real UI suitable for hobbyists.
 
 ---
 
-# Milestone 15 — Hot-Path Performance
+# Milestone 14 — Hot-Path Performance
 
 **Goal:** Replace the two linear-scan hot paths identified by benchmarks with
 O(1) or O(log N) alternatives.
@@ -418,7 +402,7 @@ O(1) or O(log N) alternatives.
 
 ---
 
-# Milestone 16 — E48/E96/E192 SMD Encoding
+# Milestone 15 — E48/E96/E192 SMD Encoding
 
 **Goal:** Close the gap between `NearestStandard` (which supports E48–E192) and
 `EncodeSMD` (which only supports 3/4-digit and EIA-96), so high-precision series
@@ -441,3 +425,19 @@ marking gets an error.
 - `SelectStandardResistor` E96 result feeds into `EncodeSMD` without error for
   all 96 base values across all decades.
 - Round-trip `DecodeSMD(EncodeSMD(v, SMDAuto)) == v` holds for all E96 values.
+
+---
+
+# Milestone 16 — Version Release
+
+**Goal:** Cut a tagged `v0.1.0` release so the `go get` path in the README resolves
+and the module is addressable by version from external projects.
+
+### Deliverables:
+- `v0.1.0` git tag pushed to the remote
+- GitHub release created with release notes summarising the API surface
+- `go get github.com/sss7526/resistor@v0.1.0` resolves correctly via the module proxy
+
+### Done When:
+- Tag exists on the remote and is visible via `go list -m github.com/sss7526/resistor@v0.1.0`.
+- Release notes cover all public API entry points.
