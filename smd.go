@@ -203,6 +203,10 @@ func decodeRNotation(m string) (float64, error) {
 
 var eia96Base = generateESeries(96)
 
+// eia96EncodeMap maps roundToSignificant(base×multiplier, 6) → EIA-96 marking string.
+// Built once at init; replaces the O(1152) nested scan in encodeEIA96.
+var eia96EncodeMap map[float64]string
+
 var eia96Multipliers = map[rune]float64{
 	'Z': 0.001,
 	'Y': 0.01,
@@ -216,6 +220,16 @@ var eia96Multipliers = map[rune]float64{
 	'D': 1_000_000,
 	'E': 10_000_000,
 	'F': 100_000_000,
+}
+
+func init() {
+	eia96EncodeMap = make(map[float64]string, len(eia96Base)*len(eia96Multipliers))
+	for letter, multiplier := range eia96Multipliers {
+		for i, v := range eia96Base {
+			key := roundToSignificant(v*multiplier, 6)
+			eia96EncodeMap[key] = fmt.Sprintf("%02d%c", i+1, letter)
+		}
+	}
 }
 
 func decodeEIA96(m string) (float64, error) {
@@ -236,19 +250,9 @@ func decodeEIA96(m string) (float64, error) {
 }
 
 func encodeEIA96(resistance float64) (string, error) {
-
-	for letter, multiplier := range eia96Multipliers {
-
-		base := resistance / multiplier
-
-		for i, v := range eia96Base {
-
-			if math.Abs(v-base) < 1e-6 {
-				return fmt.Sprintf("%02d%c", i+1, letter), nil
-			}
-		}
+	if marking, ok := eia96EncodeMap[roundToSignificant(resistance, 6)]; ok {
+		return marking, nil
 	}
-
 	return "", fmt.Errorf("value not representable in EIA‑96 series")
 }
 

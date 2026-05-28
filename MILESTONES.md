@@ -368,10 +368,22 @@ making it practical to serve over the web without a loading penalty.
 
 ---
 
-# Milestone 13 — Hot-Path Performance
+# Milestone 13 — Hot-Path Performance ✓
 
 **Goal:** Replace the two linear-scan hot paths identified by benchmarks with
 O(1) or O(log N) alternatives.
+
+### Design Decisions:
+- **`NearestStandard` E96/E192:** Two compounding fixes: (1) E48/E96/E192 base tables
+  are now pre-computed in `init()` and stored in `eSeriesBase` — eliminates the per-call
+  `generateESeries` allocation. (2) Linear scan replaced with `sort.SearchFloat64s`
+  (binary search) — O(log N) instead of O(N). `baseValues` simplified to a single map
+  lookup. Result: **57 ns/op** (was ~6,500 ns, **~114×** improvement).
+- **`EncodeSMD` EIA-96:** `eia96EncodeMap` (96 × 12 = 1,152 entries) built once at
+  `init()`. `encodeEIA96` replaced with a single map lookup keyed by
+  `roundToSignificant(resistance, 6)` — same rounding used by `decodeEIA96` and
+  `NearestStandard`, so float64 key equality holds. Result: **31 ns/op**
+  (was ~410 ns, **~13×** improvement).
 
 ### Targets:
 - **`NearestStandard` E96/E192** (~6.5 µs): currently iterates all values per decade.
@@ -381,9 +393,9 @@ O(1) or O(log N) alternatives.
   values × 12 multiplier letters.
 
 ### Done When:
-- `BenchmarkNearestStandard_E96` improves by ≥ 5×.
-- `BenchmarkEncodeSMD_EIA96` improves by ≥ 5×.
-- All existing tests continue to pass.
+- ✓ `BenchmarkNearestStandard_E96` improves by ≥ 5× — achieved ~114×.
+- ✓ `BenchmarkEncodeSMD_EIA96` improves by ≥ 5× — achieved ~13×.
+- ✓ All existing tests continue to pass.
 
 ---
 

@@ -3,6 +3,7 @@ package resistor
 import (
 	"errors"
 	"math"
+	"sort"
 )
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -100,6 +101,12 @@ var eSeriesBase = map[ESeries][]float64{
 	},
 }
 
+func init() {
+	eSeriesBase[E48] = generateESeries(48)
+	eSeriesBase[E96] = generateESeries(96)
+	eSeriesBase[E192] = generateESeries(192)
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Series Generation
 ///////////////////////////////////////////////////////////////////////////////
@@ -167,16 +174,8 @@ For small series (E3–E24), predefined canonical tables are used.
 For larger series (E48–E192), values are generated mathematically.
 */
 func baseValues(series ESeries) ([]float64, bool) {
-	if base, ok := eSeriesBase[series]; ok {
-		return base, true
-	}
-
-	switch series {
-	case E48, E96, E192:
-		return generateESeries(int(series)), true
-	}
-
-	return nil, false
+	base, ok := eSeriesBase[series]
+	return base, ok
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -237,42 +236,42 @@ func NearestStandard(value float64, series ESeries, mode RoundingMode) (float64,
 	// Normalize value into [1, 10) range.
 	normalized := value / math.Pow(10, exponent)
 
-	best := base[0]
-	bestDiff := math.Abs(normalized - best)
+	// Binary search: i is the first index where base[i] >= normalized.
+	i := sort.SearchFloat64s(base, normalized)
 
-	for _, candidate := range base {
-
-		diff := normalized - candidate
-
-		switch mode {
-
-		case RoundNearest:
-			if math.Abs(diff) < bestDiff {
-				best = candidate
-				bestDiff = math.Abs(diff)
-			}
-
-		case RoundUp:
-			if candidate >= normalized {
-				result := candidate * math.Pow(10, exponent)
-				result = roundToSignificant(result, 6)
-				return result, nil
-			}
-
-		case RoundDown:
-			if candidate <= normalized {
-				best = candidate
+	var best float64
+	switch mode {
+	case RoundUp:
+		if i < len(base) {
+			best = base[i]
+		} else {
+			result := base[0] * math.Pow(10, exponent+1)
+			return roundToSignificant(result, 6), nil
+		}
+	case RoundDown:
+		if i < len(base) && base[i] <= normalized {
+			best = base[i]
+		} else if i > 0 {
+			best = base[i-1]
+		} else {
+			best = base[0]
+		}
+	default: // RoundNearest and RoundingUnspecified
+		switch {
+		case i == 0:
+			best = base[0]
+		case i == len(base):
+			best = base[len(base)-1]
+		default:
+			lo, hi := base[i-1], base[i]
+			if math.Abs(normalized-lo) <= math.Abs(normalized-hi) {
+				best = lo
+			} else {
+				best = hi
 			}
 		}
 	}
 
-	if mode == RoundUp {
-		// No candidate in this decade was >= normalized; step to first value of next decade.
-		result := base[0] * math.Pow(10, exponent+1)
-		return roundToSignificant(result, 6), nil
-	}
-
 	result := best * math.Pow(10, exponent)
-	result = roundToSignificant(result, 6)
-	return result, nil
+	return roundToSignificant(result, 6), nil
 }
