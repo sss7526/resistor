@@ -368,7 +368,52 @@ making it practical to serve over the web without a loading penalty.
 
 ---
 
-# Milestone 13 — Web Application
+# Milestone 13 — Hot-Path Performance
+
+**Goal:** Replace the two linear-scan hot paths identified by benchmarks with
+O(1) or O(log N) alternatives.
+
+### Targets:
+- **`NearestStandard` E96/E192** (~6.5 µs): currently iterates all values per decade.
+  Replace with binary search on the sorted series table.
+- **`EncodeSMD` EIA-96** (~410 ns): currently an O(1152) nested loop scan.
+  Replace with a pre-built `map[float64]string` lookup keyed by the 96 canonical
+  values × 12 multiplier letters.
+
+### Done When:
+- `BenchmarkNearestStandard_E96` improves by ≥ 5×.
+- `BenchmarkEncodeSMD_EIA96` improves by ≥ 5×.
+- All existing tests continue to pass.
+
+---
+
+# Milestone 14 — E48/E96/E192 SMD Encoding
+
+**Goal:** Close the gap between `NearestStandard` (which supports E48–E192) and
+`EncodeSMD` (which only supports 3/4-digit and EIA-96), so high-precision series
+values are fully round-trippable through the CLI, TUI, and WASM encode path.
+
+### Problem:
+`EncodeSMD` with `SMDStandard` or `SMDAuto` rejects values that are valid E96/E192
+standard values but not representable in 3/4-digit format. A user who calls
+`SelectStandardResistor` with E96 and then tries to encode the result as an SMD
+marking gets an error.
+
+### Deliverables:
+- `EncodeSMD` auto-selects EIA-96 for E96/E192 values that are not 3/4-digit
+  representable, rather than returning an error.
+- Or: a new `SMDPrecision` encoding mode that always prefers EIA-96.
+- CLI `smd encode` and WASM `encodeSMD` pick up the fix transparently.
+- New tests covering the E96 → SMD round-trip.
+
+### Done When:
+- `SelectStandardResistor` E96 result feeds into `EncodeSMD` without error for
+  all 96 base values across all decades.
+- Round-trip `DecodeSMD(EncodeSMD(v, SMDAuto)) == v` holds for all E96 values.
+
+---
+
+# Milestone 15 — Web Application
 
 **Goal:** Build a usable single-page web application on top of the WASM module.
 The reference page (`web/index.html`) is a correctness harness; this milestone
@@ -392,51 +437,6 @@ produces a real UI suitable for hobbyists.
 - All five views are functional.
 - Color band diagram renders correct colors for any valid input.
 - Works in current Chrome, Firefox, and Safari without a build step.
-
----
-
-# Milestone 14 — Hot-Path Performance
-
-**Goal:** Replace the two linear-scan hot paths identified by benchmarks with
-O(1) or O(log N) alternatives.
-
-### Targets:
-- **`NearestStandard` E96/E192** (~6.5 µs): currently iterates all values per decade.
-  Replace with binary search on the sorted series table.
-- **`EncodeSMD` EIA-96** (~410 ns): currently an O(1152) nested loop scan.
-  Replace with a pre-built `map[float64]string` lookup keyed by the 96 canonical
-  values × 12 multiplier letters.
-
-### Done When:
-- `BenchmarkNearestStandard_E96` improves by ≥ 5×.
-- `BenchmarkEncodeSMD_EIA96` improves by ≥ 5×.
-- All existing tests continue to pass.
-
----
-
-# Milestone 15 — E48/E96/E192 SMD Encoding
-
-**Goal:** Close the gap between `NearestStandard` (which supports E48–E192) and
-`EncodeSMD` (which only supports 3/4-digit and EIA-96), so high-precision series
-values are fully round-trippable through the CLI, TUI, and WASM encode path.
-
-### Problem:
-`EncodeSMD` with `SMDStandard` or `SMDAuto` rejects values that are valid E96/E192
-standard values but not representable in 3/4-digit format. A user who calls
-`SelectStandardResistor` with E96 and then tries to encode the result as an SMD
-marking gets an error.
-
-### Deliverables:
-- `EncodeSMD` auto-selects EIA-96 for E96/E192 values that are not 3/4-digit
-  representable, rather than returning an error.
-- Or: a new `SMDPrecision` encoding mode that always prefers EIA-96.
-- CLI `smd encode` and WASM `encodeSMD` pick up the fix transparently.
-- New tests covering the E96 → SMD round-trip.
-
-### Done When:
-- `SelectStandardResistor` E96 result feeds into `EncodeSMD` without error for
-  all 96 base values across all decades.
-- Round-trip `DecodeSMD(EncodeSMD(v, SMDAuto)) == v` holds for all E96 values.
 
 ---
 
