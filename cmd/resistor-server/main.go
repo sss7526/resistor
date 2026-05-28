@@ -117,7 +117,7 @@ func pageHandler(w http.ResponseWriter, r *http.Request) {
 
 	csp := strings.Join([]string{
 		"default-src 'none'",
-		"script-src 'self' 'nonce-" + nonce + "'",
+		"script-src 'self' 'nonce-" + nonce + "' 'wasm-unsafe-eval'",
 		"style-src 'self'",
 		"img-src 'self' data:",
 		"connect-src 'self'",
