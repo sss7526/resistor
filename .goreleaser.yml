@@ -55,7 +55,6 @@ checksum:
 
 dockers:
   - id: resistor-go
-    ids: [resistor-server]
     image_templates:
       - "sss7526/resistor:{{ .Version }}"
     dockerfile: Dockerfile
@@ -64,7 +63,6 @@ dockers:
       - "--build-arg=VERSION={{ .Version }}"
 
   - id: resistor-tinygo
-    ids: [resistor-server]
     image_templates:
       - "sss7526/resistor:{{ .Version }}-tinygo"
       - "sss7526/resistor:latest"
@@ -74,8 +72,8 @@ dockers:
       - "--build-arg=VERSION={{ .Version }}"
 
 release:
-  draft: false
   prerelease: auto
+  mode: keep-existing
 
 changelog:
   sort: asc
