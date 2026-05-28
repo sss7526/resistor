@@ -1,5 +1,11 @@
 # resistor
 
+[![CI](https://github.com/sss7526/resistor/actions/workflows/ci.yml/badge.svg)](https://github.com/sss7526/resistor/actions/workflows/ci.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/sss7526/resistor)](https://goreportcard.com/report/github.com/sss7526/resistor)
+[![Go Reference](https://pkg.go.dev/badge/github.com/sss7526/resistor.svg)](https://pkg.go.dev/github.com/sss7526/resistor)
+[![Latest Release](https://img.shields.io/github/release/sss7526/resistor.svg)](https://github.com/sss7526/resistor/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 A Go library for working with fixed resistors. Decode and encode color band and SMD markings, snap values to IEC preferred series, and infer unknown properties from physical observations.
 
 No UI dependencies. Import it as a library, or use the included CLI, TUI, and web app.

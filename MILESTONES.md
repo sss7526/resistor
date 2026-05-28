@@ -654,7 +654,36 @@ when its first Release PR is merged. Do not tag manually.
 
 ---
 
-### Part 2 — Automated Releases (release-please)
+### Part 2 — CI Workflow
+
+A dedicated CI workflow runs on every push and every pull request to `main`,
+keeping the badge green and gating all merges.
+
+**File:** `.github/workflows/ci.yml`
+
+```yaml
+on:
+  push:
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: make test-all
+      - run: make smoke
+```
+
+This is also what the CI badge in the README points to.
+
+---
+
+### Part 3 — Automated Releases (release-please)
 
 **How it works:**
 
@@ -683,7 +712,7 @@ sits open until you decide to ship.
 
 ---
 
-### Part 3 — Automated Dependency Maintenance (Dependabot + auto-merge)
+### Part 4 — Automated Dependency Maintenance (Dependabot + auto-merge)
 
 Dependabot opens PRs automatically when new versions of dependencies are
 available. A companion workflow auto-merges those PRs when CI passes.
@@ -708,7 +737,7 @@ that need attention are major version bumps, which happen rarely.
 
 ---
 
-### Part 4 — Version Wiring (CLI, TUI, Server)
+### Part 5 — Version Wiring (CLI, TUI, Server)
 
 **Current state:**
 
@@ -778,7 +807,7 @@ stage via `-ldflags "-X 'main.version=${VERSION}'"`.
 
 ---
 
-### Part 5 — GoReleaser (Binary Publishing + Docker Hub)
+### Part 6 — GoReleaser (Binary Publishing + Docker Hub)
 
 GoReleaser fires on every git tag (created by release-please) and:
 1. Builds cross-platform binaries for `resistor-cli` and `resistor-tui`.
@@ -857,7 +886,7 @@ release:
 
 ---
 
-### Part 6 — EC2 Deployment (one-time bootstrap, then hands-off)
+### Part 7 — EC2 Deployment (one-time bootstrap, then hands-off)
 
 After GoReleaser pushes `:latest` to Docker Hub, Watchtower on the EC2 instance
 picks it up automatically within 5 minutes and restarts the container. The only
@@ -923,6 +952,7 @@ restart with timestamps, providing a lightweight audit trail.
 ### Done When:
 - All one-time setup steps completed (Docker Hub token, two GitHub secrets,
   Actions permissions).
+- `ci.yml` workflow passes on a push to `main`; README CI badge is green.
 - `release-please.yml` is present; on first merge to `main` it opens a Release PR.
 - Merging the Release PR creates the `v0.1.0` tag and draft GitHub Release.
 - GoReleaser fires on the tag, uploads CLI + TUI binaries for all platforms,
