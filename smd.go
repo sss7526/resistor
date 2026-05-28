@@ -74,9 +74,10 @@ func DecodeSMD(marking string) (ResistorSpec, error) {
 		return spec, fmt.Errorf("empty marking")
 	}
 
-	// R-notation
-	if strings.ContainsRune(m, 'R') {
-		val, err := decodeRNotation(m)
+	// EIA-96 format (two digits + letter) — checked before R-notation to avoid
+	// misreading EIA-96 codes whose multiplier letter is 'R' (×0.1) as R-notation.
+	if len(m) == 3 && unicode.IsDigit(rune(m[0])) && unicode.IsDigit(rune(m[1])) && unicode.IsLetter(rune(m[2])) {
+		val, err := decodeEIA96(m)
 		if err != nil {
 			return spec, err
 		}
@@ -94,9 +95,9 @@ func DecodeSMD(marking string) (ResistorSpec, error) {
 		return spec, nil
 	}
 
-	// EIA-96 format (two digits + letter)
-	if len(m) == 3 && unicode.IsDigit(rune(m[0])) && unicode.IsDigit(rune(m[1])) && unicode.IsLetter(rune(m[2])) {
-		val, err := decodeEIA96(m)
+	// R-notation (e.g. "4R7" → 4.7Ω, "R47" → 0.47Ω)
+	if strings.ContainsRune(m, 'R') {
+		val, err := decodeRNotation(m)
 		if err != nil {
 			return spec, err
 		}
@@ -119,11 +120,13 @@ Mode behavior:
 SMDAuto:
 
 	Attempt standard 3/4 digit encoding first.
-	If not possible, error.
+	If not representable in 3/4-digit format, fall back to EIA-96.
+	If neither succeeds, return an error.
 
 SMDStandard:
 
 	Only use 3/4 digit encoding.
+	Return an error if the value is not representable.
 
 SMDEIA96:
 
@@ -138,7 +141,13 @@ func EncodeSMD(resistance float64, mode SMDEncodingMode) (string, error) {
 
 	switch mode {
 
-	case SMDAuto, SMDStandard:
+	case SMDAuto:
+		if marking, err := encodeStandardSMD(resistance); err == nil {
+			return marking, nil
+		}
+		return encodeEIA96(resistance)
+
+	case SMDStandard:
 		return encodeStandardSMD(resistance)
 
 	case SMDEIA96:

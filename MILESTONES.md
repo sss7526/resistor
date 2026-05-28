@@ -399,11 +399,23 @@ O(1) or O(log N) alternatives.
 
 ---
 
-# Milestone 14 — E48/E96/E192 SMD Encoding
+# Milestone 14 — E48/E96/E192 SMD Encoding ✓
 
 **Goal:** Close the gap between `NearestStandard` (which supports E48–E192) and
 `EncodeSMD` (which only supports 3/4-digit and EIA-96), so high-precision series
 values are fully round-trippable through the CLI, TUI, and WASM encode path.
+
+### Design Decisions:
+- **`SMDAuto` cascade:** `EncodeSMD` with `SMDAuto` now attempts 3/4-digit first and
+  falls through to EIA-96 on failure. `SMDStandard` remains strict (3/4-digit only).
+  No new encoding mode was needed; the cascade fits naturally into the existing
+  `SMDAuto` semantics.
+- **`DecodeSMD` ordering fix:** EIA-96 format check (2 digits + letter) is now tested
+  before R-notation. Previously, EIA-96 codes using the 'R' multiplier letter (×0.1,
+  e.g. "01R") were misread as R-notation and returned wrong values. The reorder is
+  safe because valid R-notation markings ("4R7", "R47") have 'R' in position 0 or 1,
+  not position 2, so the EIA-96 pattern check rejects them correctly.
+- **CLI and WASM:** both call `EncodeSMD` directly, so the fix is transparent.
 
 ### Problem:
 `EncodeSMD` with `SMDStandard` or `SMDAuto` rejects values that are valid E96/E192
@@ -412,16 +424,16 @@ standard values but not representable in 3/4-digit format. A user who calls
 marking gets an error.
 
 ### Deliverables:
-- `EncodeSMD` auto-selects EIA-96 for E96/E192 values that are not 3/4-digit
+- ✓ `EncodeSMD` auto-selects EIA-96 for E96/E192 values that are not 3/4-digit
   representable, rather than returning an error.
-- Or: a new `SMDPrecision` encoding mode that always prefers EIA-96.
-- CLI `smd encode` and WASM `encodeSMD` pick up the fix transparently.
-- New tests covering the E96 → SMD round-trip.
+- ✓ CLI `smd encode` and WASM `encodeSMD` pick up the fix transparently.
+- ✓ New tests covering the E96 → SMD round-trip.
 
 ### Done When:
-- `SelectStandardResistor` E96 result feeds into `EncodeSMD` without error for
+- ✓ `SelectStandardResistor` E96 result feeds into `EncodeSMD` without error for
   all 96 base values across all decades.
-- Round-trip `DecodeSMD(EncodeSMD(v, SMDAuto)) == v` holds for all E96 values.
+- ✓ Round-trip `DecodeSMD(EncodeSMD(v, SMDAuto)) == v` holds for all 96 × 12 = 1,152
+  E96 values (all base values across all EIA-96 multiplier decades).
 
 ---
 

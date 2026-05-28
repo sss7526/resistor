@@ -251,3 +251,87 @@ func TestSMD_RoundTrip_EIA96(t *testing.T) {
 		})
 	}
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// E96 Auto-Fallback and Round-Trip Tests
+///////////////////////////////////////////////////////////////////////////////
+
+// TestSMD_E96_AutoFallback verifies that SMDAuto falls through to EIA-96 for
+// E96 values that are not representable in 3/4-digit format.
+func TestSMD_E96_AutoFallback(t *testing.T) {
+	cases := []struct {
+		name  string
+		value float64
+	}{
+		{"1.02Ω", 1.02},
+		{"1.05Ω", 1.05},
+		{"10.2Ω", 10.2},
+		{"10.5Ω", 10.5},
+		{"52.3Ω", 52.3},
+	}
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			marking, err := EncodeSMD(tt.value, SMDAuto)
+			require.NoError(t, err)
+			spec, err := DecodeSMD(marking)
+			require.NoError(t, err)
+			require.InDelta(t, tt.value, spec.ResistanceOhms, 1e-6)
+		})
+	}
+}
+
+// TestSMD_E96_RoundTrip_AllBaseValues tests DecodeSMD(EncodeSMD(v, SMDAuto)) == v
+// for all 96 E96 base values across all 12 EIA-96 multiplier decades.
+func TestSMD_E96_RoundTrip_AllBaseValues(t *testing.T) {
+	for letter, multiplier := range eia96Multipliers {
+		for i, base := range eia96Base {
+			v := roundToSignificant(base*multiplier, 6)
+			t.Run(fmt.Sprintf("base[%02d]x%c=%.6g", i+1, letter, v), func(t *testing.T) {
+				marking, err := EncodeSMD(v, SMDAuto)
+				require.NoError(t, err, "EncodeSMD failed")
+				spec, err := DecodeSMD(marking)
+				require.NoError(t, err, "DecodeSMD failed on marking %q", marking)
+				require.InDelta(t, v, spec.ResistanceOhms, v*1e-5,
+					"round-trip mismatch: want %.6g, got %.6g via %q", v, spec.ResistanceOhms, marking)
+			})
+		}
+	}
+}
+
+// TestSMD_E96_NearestStandard_RoundTrip verifies that NearestStandard(E96) results
+// feed into EncodeSMD without error for all 96 base values across common decades.
+func TestSMD_E96_NearestStandard_RoundTrip(t *testing.T) {
+	multipliers := []float64{10, 100, 1_000, 10_000, 100_000}
+	for _, mult := range multipliers {
+		for _, base := range eia96Base {
+			v := roundToSignificant(base*mult, 6)
+			snapped, err := NearestStandard(v, E96, RoundNearest)
+			require.NoError(t, err)
+			require.InDelta(t, v, snapped, v*1e-5, "NearestStandard should return exact E96 value")
+			_, err = EncodeSMD(snapped, SMDAuto)
+			require.NoError(t, err, "EncodeSMD(SMDAuto) failed for E96 value %.6g", snapped)
+		}
+	}
+}
+
+// TestSMD_E96_SMDStandard_StillStrict verifies that SMDStandard still rejects
+// values that are not representable in 3/4-digit format.
+func TestSMD_E96_SMDStandard_StillStrict(t *testing.T) {
+	nonStandardValues := []float64{1.02, 10.5, 52.3}
+	for _, v := range nonStandardValues {
+		t.Run(fmt.Sprintf("%.4g", v), func(t *testing.T) {
+			_, err := EncodeSMD(v, SMDStandard)
+			require.Error(t, err, "SMDStandard should still reject %.4g", v)
+		})
+	}
+}
+
+// TestSMD_E96_AutoNonRepresentable verifies that SMDAuto still errors when a
+// value is neither 3/4-digit nor EIA-96 representable.
+func TestSMD_E96_AutoNonRepresentable(t *testing.T) {
+	// 1234 is not in the E96 series and not 3/4-digit representable
+	// (1234/10=123.4, not exact integer; 1234/100=12.34, not exact)
+	_, err := EncodeSMD(1234.5678, SMDAuto)
+	require.Error(t, err)
+}
+
