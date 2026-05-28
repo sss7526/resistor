@@ -18,6 +18,10 @@ WASM_PATH := ./cmd/resistor-wasm
 WEBDIR := web
 VERSION := v0.1.0
 
+# TinyGo WASM build (pass TINYGO=1 or use build-wasm-tinygo)
+TINYGO ?= 0
+TINYGO_BIN ?= tinygo
+
 # Default fuzz time (override via: make fuzz FUZZTIME=30s)
 FUZZTIME ?= 10s
 
@@ -99,12 +103,25 @@ install-tui:
 # ---------------------------------------
 
 .PHONY: build-wasm
+ifeq ($(TINYGO),1)
 build-wasm:
-	@echo "→ Building WASM module"
+	@echo "→ Building WASM module (TinyGo)"
+	@mkdir -p $(WEBDIR)
+	$(TINYGO_BIN) build -target=wasm -o $(WEBDIR)/resistor.wasm $(WASM_PATH)
+	cp "$$($(TINYGO_BIN) env TINYGOROOT)/targets/wasm_exec.js" $(WEBDIR)/wasm_exec.js
+	@echo "→ Artifacts: $(WEBDIR)/resistor.wasm  $(WEBDIR)/wasm_exec.js"
+else
+build-wasm:
+	@echo "→ Building WASM module (standard Go)"
 	@mkdir -p $(WEBDIR)
 	GOOS=js GOARCH=wasm go build -o $(WEBDIR)/resistor.wasm $(WASM_PATH)
 	cp "$$(go env GOROOT)/lib/wasm/wasm_exec.js" $(WEBDIR)/wasm_exec.js
 	@echo "→ Artifacts: $(WEBDIR)/resistor.wasm  $(WEBDIR)/wasm_exec.js"
+endif
+
+.PHONY: build-wasm-tinygo
+build-wasm-tinygo:
+	$(MAKE) build-wasm TINYGO=1
 
 # ---------------------------------------
 # Unit Test Subsets
@@ -194,7 +211,9 @@ help:
 	@echo "  build               Build CLI, TUI, and WASM"
 	@echo "  build-cli           Build CLI binary to bin/"
 	@echo "  build-tui           Build TUI binary to bin/"
-	@echo "  build-wasm          Build WASM module to web/"
+	@echo "  build-wasm          Build WASM module to web/ (standard Go)"
+	@echo "  build-wasm TINYGO=1 Build WASM module using TinyGo (~430 KB gzip)"
+	@echo "  build-wasm-tinygo   Alias for build-wasm TINYGO=1"
 	@echo "  install-cli         Install CLI to GOPATH/bin"
 	@echo "  install-tui         Install TUI to GOPATH/bin"
 	@echo ""

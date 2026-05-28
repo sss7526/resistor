@@ -335,10 +335,22 @@ responsibility is serving static files.
 
 ---
 
-# Milestone 12 — WASM Binary Size Reduction
+# Milestone 12 — WASM Binary Size Reduction ✓
 
 **Goal:** Reduce the WASM binary from ~3.4 MB to under 500 KB using TinyGo,
 making it practical to serve over the web without a loading penalty.
+
+### Design Decisions:
+- **TinyGo 0.41.1** (requires Go ≥1.26) produces a 1.3 MB raw / **430 KB gzip** artifact —
+  under the 500 KB target. No changes to `cmd/resistor-wasm/` were required;
+  `encoding/json`, `syscall/js`, and all library imports compiled without modification.
+- **Build toolchain:** `make build-wasm TINYGO=1` or `make build-wasm-tinygo`.
+  TinyGo binary path overridable via `TINYGO_BIN` variable.
+- **JS shim:** TinyGo ships its own `wasm_exec.js` at `$(tinygo env TINYGOROOT)/targets/wasm_exec.js`.
+  The build target copies it alongside the `.wasm` artifact. It exports the same `Go` class
+  as the standard runtime shim, so `web/index.html` is fully compatible with both builds.
+- **Default build unchanged:** `make build-wasm` still uses the standard Go toolchain
+  (3.4 MB / ~950 KB gzip) so the build works without TinyGo installed.
 
 ### Constraints:
 - The library uses `math`, `strconv`, `strings`, and `encoding/json`. TinyGo supports
@@ -350,9 +362,9 @@ making it practical to serve over the web without a loading penalty.
   or a separate `make build-wasm-tinygo` target.
 
 ### Done When:
-- TinyGo build produces a correct `.wasm` artifact that passes the reference page checks.
-- Binary is under 500 KB (gzip).
-- Fallback standard-Go build still works if TinyGo is not installed.
+- ✓ TinyGo build produces a correct `.wasm` artifact that passes the reference page checks.
+- ✓ Binary is under 500 KB (gzip) — achieved 430 KB.
+- ✓ Fallback standard-Go build still works if TinyGo is not installed.
 
 ---
 
