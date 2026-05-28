@@ -210,20 +210,7 @@ This produces `web/resistor.wasm` and a versioned `web/wasm_exec.js` shim copied
 
 The standard Go toolchain produces a ~3.4 MB `.wasm` file. TinyGo produces a binary around **430 KB gzip** (~1.1 MB uncompressed). To use it:
 
-**Install TinyGo** (requires TinyGo 0.41.0+ for Go 1.26):
-
-```
-# Linux/macOS — download latest release from GitHub
-curl -L https://github.com/tinygo-org/tinygo/releases/latest/download/tinygo0.41.0.linux-amd64.tar.gz \
-  | tar -xz -C ~/
-
-export PATH="$HOME/tinygo/bin:$PATH"
-tinygo version   # should print tinygo version 0.41.x ...
-```
-
-> macOS users with Homebrew may instead run `brew install tinygo`, but verify the installed version supports Go 1.26 before use (`tinygo version`).
-
-Then build with TinyGo:
+Install TinyGo following the [official instructions](https://tinygo.org/getting-started/install) (requires a version that supports Go 1.26). Once installed, build with TinyGo:
 
 ```
 make build-wasm TINYGO=1
