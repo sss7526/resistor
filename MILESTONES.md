@@ -464,8 +464,16 @@ correctness harness; this milestone produces a real UI suitable for hobbyists.
   - `X-Content-Type-Options: nosniff`
   - `X-Frame-Options: DENY`
   - `Referrer-Policy: strict-origin-when-cross-origin`
-  - `Content-Security-Policy` — restrictive default; WASM requires `wasm-unsafe-eval`
-    in `script-src`.
+  - `Content-Security-Policy` — zero unsafe directives. `WebAssembly.instantiateStreaming`
+    is a fetch-based API and does not require `wasm-unsafe-eval`; that directive is only
+    needed for buffer-based `WebAssembly.instantiate(ArrayBuffer)`. External scripts
+    covered by `'self'`. Inline `<script>` blocks use a **per-request nonce**
+    (generated with `crypto/rand`, injected into both the CSP header and the HTML
+    template by the request handler). Effective policy:
+    `script-src 'self' 'nonce-{n}'; object-src 'none'; base-uri 'self'`.
+  - Consequence: the HTML page cannot be served as a raw static file — it is rendered
+    via a Go template handler that injects the nonce. Static assets (`.wasm`, `.js`,
+    `.css`) are served directly from the embedded filesystem.
 - **Request size limit:** `http.MaxBytesReader` on every request body.
 - **Health endpoint:** `GET /health` returns `200 OK` with `{"status":"ok"}` —
   no authentication, suitable for load balancer probes.
