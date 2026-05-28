@@ -18,7 +18,7 @@ WASM_PATH := ./cmd/resistor-wasm
 SERVER := resistor-server
 SERVER_PATH := ./cmd/resistor-server
 WEBDIR := web
-VERSION := v0.1.0
+VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 
 # TinyGo WASM build (pass TINYGO=1 or use build-wasm-tinygo)
 TINYGO ?= 0
@@ -108,7 +108,7 @@ install-tui:
 build-server: build-wasm
 	@echo "→ Building server binary"
 	@mkdir -p $(BINDIR)
-	go build -o $(BINDIR)/$(SERVER) $(SERVER_PATH)
+	go build -o $(BINDIR)/$(SERVER) -ldflags "-X 'main.version=$(VERSION)'" $(SERVER_PATH)
 
 # Convenience alias: build server with TinyGo WASM (~430 KB gzip vs ~3.4 MB)
 .PHONY: build-server-tinygo
@@ -150,6 +150,22 @@ endif
 .PHONY: build-wasm-tinygo
 build-wasm-tinygo:
 	$(MAKE) build-wasm TINYGO=1
+
+# ---------------------------------------
+# Docker Build Targets
+# ---------------------------------------
+
+.PHONY: docker-build
+docker-build:
+	@echo "→ Building Docker image (standard Go WASM)"
+	docker build --build-arg WASM=go --build-arg VERSION=$(VERSION) \
+	  -t resistor-server:$(VERSION) .
+
+.PHONY: docker-build-tinygo
+docker-build-tinygo:
+	@echo "→ Building Docker image (TinyGo WASM)"
+	docker build --build-arg WASM=tinygo --build-arg VERSION=$(VERSION) \
+	  -t resistor-server:$(VERSION)-tinygo .
 
 # ---------------------------------------
 # Unit Test Subsets
@@ -255,6 +271,8 @@ help:
 	@echo "  install-tui           Install TUI to GOPATH/bin"
 	@echo "  install-server        Install server to GOPATH/bin (standard Go WASM)"
 	@echo "  install-server-tinygo Install server to GOPATH/bin (TinyGo WASM)"
+	@echo "  docker-build          Build Docker image with standard Go WASM"
+	@echo "  docker-build-tinygo   Build Docker image with TinyGo WASM (:latest tag)"
 	@echo ""
 	@echo "Test"
 	@echo "  test                Unit tests"

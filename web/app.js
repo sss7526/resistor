@@ -465,4 +465,12 @@ document.addEventListener('DOMContentLoaded', () => {
     inferCount.addEventListener('change', () => syncBandRows('infer-row', 'infer-count', 6));
     syncBandRows('infer-row', 'infer-count', 6);
   }
+
+  fetch('/health')
+    .then(r => r.json())
+    .then(d => {
+      const v = document.getElementById('app-version');
+      if (v && d.version) v.textContent = d.version;
+    })
+    .catch(() => {});
 });

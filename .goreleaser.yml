@@ -1,0 +1,83 @@
+version: 2
+
+before:
+  hooks:
+    - make build-wasm
+
+builds:
+  - id: resistor-cli
+    main: ./cmd/resistor-cli
+    binary: resistor-cli
+    ldflags:
+      - "-X 'github.com/sss7526/resistor/cmd/resistor-cli/cmd.version={{.Version}}'"
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    ignore:
+      - goos: windows
+        goarch: arm64
+
+  - id: resistor-tui
+    main: ./cmd/resistor-tui
+    binary: resistor-tui
+    ldflags:
+      - "-X 'github.com/sss7526/resistor/cmd/resistor-tui/app.version={{.Version}}'"
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    ignore:
+      - goos: windows
+        goarch: arm64
+
+  - id: resistor-server
+    main: ./cmd/resistor-server
+    binary: resistor-server
+    ldflags:
+      - "-X 'main.version={{.Version}}' -s -w"
+    goos: [linux]
+    goarch: [amd64, arm64]
+
+archives:
+  - id: cli-archive
+    ids: [resistor-cli]
+    name_template: "resistor-cli_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+  - id: tui-archive
+    ids: [resistor-tui]
+    name_template: "resistor-tui_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+checksum:
+  name_template: checksums.txt
+
+dockers:
+  - id: resistor-go
+    image_templates:
+      - "sss7526/resistor:{{ .Version }}"
+    dockerfile: Dockerfile
+    build_flag_templates:
+      - "--build-arg=WASM=go"
+      - "--build-arg=VERSION={{ .Version }}"
+
+  - id: resistor-tinygo
+    image_templates:
+      - "sss7526/resistor:{{ .Version }}-tinygo"
+      - "sss7526/resistor:latest"
+    dockerfile: Dockerfile
+    build_flag_templates:
+      - "--build-arg=WASM=tinygo"
+      - "--build-arg=VERSION={{ .Version }}"
+
+release:
+  prerelease: auto
+  mode: keep-existing
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - "^chore\\(deps\\)"
