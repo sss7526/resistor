@@ -45,13 +45,13 @@ fmt:
 
 # Run all unit tests
 .PHONY: test
-test:
+test: build-wasm
 	@echo "→ Running unit tests"
 	go test -v $(PKG)
 
 # Run short unit tests
 .PHONY: test-short
-test-short:
+test-short: build-wasm
 	@echo "→ Running short unit tests"
 	go test -short -v $(PKG)
 
