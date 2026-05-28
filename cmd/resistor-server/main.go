@@ -40,11 +40,11 @@ func (n noDirFS) Open(name string) (fs.File, error) {
 	}
 	info, err := f.Stat()
 	if err != nil {
-		f.Close()
+		_ = f.Close()
 		return nil, err
 	}
 	if info.IsDir() {
-		f.Close()
+		_ = f.Close()
 		return nil, fs.ErrNotExist
 	}
 	return f, nil
@@ -64,7 +64,7 @@ func main() {
 
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprint(w, `{"status":"ok"}`)
+		_, _ = fmt.Fprint(w, `{"status":"ok"}`)
 	})
 
 	mux.Handle("GET /static/", http.StripPrefix("/static", http.FileServer(http.FS(noDirFS{subFS}))))
