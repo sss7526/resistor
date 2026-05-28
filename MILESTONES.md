@@ -325,7 +325,7 @@ responsibility is serving static files.
 - ✓ `cmd/resistor-wasm/main.go` — entry point exporting all core operations
 - ✓ Consistent error handling — panics recovered, all errors returned as `{ok: false, error}`
 - ✓ `make build-wasm` — reproducible; outputs `web/resistor.wasm` + `web/wasm_exec.js`
-- ✓ `web/index.html` — reference page exercising every exported function
+- ✓ `web/embed.go` + `cmd/resistor-server/` — full web application serving the WASM module
 
 ### Done When:
 - ✓ All core library operations are callable from browser JavaScript.
@@ -348,7 +348,7 @@ making it practical to serve over the web without a loading penalty.
   TinyGo binary path overridable via `TINYGO_BIN` variable.
 - **JS shim:** TinyGo ships its own `wasm_exec.js` at `$(tinygo env TINYGOROOT)/targets/wasm_exec.js`.
   The build target copies it alongside the `.wasm` artifact. It exports the same `Go` class
-  as the standard runtime shim, so `web/index.html` is fully compatible with both builds.
+  as the standard runtime shim, so the server application is fully compatible with both builds.
 - **Default build unchanged:** `make build-wasm` still uses the standard Go toolchain
   (3.4 MB / ~950 KB gzip) so the build works without TinyGo installed.
 
@@ -440,8 +440,7 @@ marking gets an error.
 # Milestone 15 — Web Application
 
 **Goal:** Build a usable, production-ready web application on top of the WASM module,
-served by a hardened Go HTTP server. The reference page (`web/index.html`) is a
-correctness harness; this milestone produces a real UI suitable for hobbyists.
+served by a hardened Go HTTP server, suitable for hobbyists.
 
 ### Server Architecture
 

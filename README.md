@@ -246,16 +246,6 @@ RESISTOR_ADDR=:9000 ./bin/resistor-server    # via env var
 
 The server is designed to sit behind a TLS-terminating reverse proxy. It sets strict security headers by default (CSP with per-request nonce, COEP, COOP, X-Frame-Options, etc.) and does not require any configuration files.
 
-### Reference page
-
-Serve the `web/` directory from any static file server to access the minimal WASM reference page:
-
-```
-cd web && python3 -m http.server 8080
-```
-
-Then open `http://localhost:8080`.
-
 ### JavaScript API
 
 All functions live on the `resistor` global object. Each returns `{ok: true, value: ...}` on success or `{ok: false, error: "..."}` on failure. Inputs are JSON strings; outputs are plain JavaScript objects.
