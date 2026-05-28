@@ -601,8 +601,41 @@ and provide a complete Caddy-fronted deployment configuration.
 # Milestone 17 — Version Release & Automated Maintenance
 
 **Goal:** Ship `v0.1.0`, then wire up automation so the project self-maintains
-(dependency updates, future releases) without manual intervention between active
-development milestones.
+(dependency updates, future releases, binary publishing, Docker Hub) without
+manual intervention between active development milestones.
+
+---
+
+### One-Time Human Setup (do these once, never again)
+
+These steps cannot be automated — they require human hands on external services.
+Complete them before implementing the workflows below.
+
+#### 1. Docker Hub access token
+
+1. Log in at [hub.docker.com](https://hub.docker.com).
+2. Account Settings → Security → Access Tokens → **New Access Token**.
+3. Name it `resistor-goreleaser`, scope: **Read & Write**.
+4. Copy the token — it is shown only once.
+
+#### 2. GitHub Actions secrets
+
+Go to the repo on GitHub → Settings → Secrets and variables → Actions →
+**New repository secret**. Add both:
+
+| Secret name | Value |
+|---|---|
+| `DOCKERHUB_USERNAME` | your Docker Hub username |
+| `DOCKERHUB_TOKEN` | the access token from step 1 |
+
+#### 3. GitHub Actions permissions
+
+Repo → Settings → Actions → General → Workflow permissions →
+set to **Read and write permissions** and enable
+**Allow GitHub Actions to create and approve pull requests**.
+This is required for release-please to open its Release PR.
+
+That is the complete manual setup. Everything else is automated from this point.
 
 ---
 
@@ -611,9 +644,12 @@ development milestones.
 Push the first tagged release so the module is addressable via `go get` and
 indexed by `pkg.go.dev`.
 
+The tag and GitHub Release are created automatically by release-please (Part 2)
+when its first Release PR is merged. Do not tag manually.
+
 **Deliverables:**
-- `v0.1.0` git tag pushed to the remote.
-- GitHub Release created (by the automation below, not by hand).
+- `v0.1.0` git tag created by release-please on first Release PR merge.
+- GitHub Release published automatically with generated changelog.
 - `go get github.com/sss7526/resistor@v0.1.0` resolves via the module proxy.
 
 ---
@@ -622,38 +658,35 @@ indexed by `pkg.go.dev`.
 
 **How it works:**
 
-`release-please` (Google) reads conventional commit messages (`feat:`, `fix:`,
-`chore:`, `docs:`, etc.) that are already the style used in this repo and
-maintains a rolling "Release PR" on `main`.
+`release-please` reads conventional commit messages (`feat:`, `fix:`, `chore:`,
+`docs:`, etc.) — already the style used in this repo — and maintains a rolling
+"Release PR" on `main`.
 
-- Every merge to `main` that contains `fix:` commits bumps the **patch** version.
-- Every merge to `main` that contains `feat:` commits bumps the **minor** version.
-- A `feat!:` commit or a `BREAKING CHANGE:` footer bumps the **major** version.
+- `fix:` commits → **patch** bump (`v0.1.0` → `v0.1.1`)
+- `feat:` commits → **minor** bump (`v0.1.0` → `v0.2.0`)
+- `feat!:` or `BREAKING CHANGE:` footer → **major** bump (`v0.1.0` → `v1.0.0`)
 
-When you want to cut a release, simply **merge the Release PR** that release-please
-has kept open. That merge triggers the action to:
-1. Create the git tag (`v0.1.1`, `v0.2.0`, etc.).
-2. Publish a GitHub Release with a generated `CHANGELOG.md` entry.
-3. No manual tagging, no manual release notes.
-
-Between active development milestones the Release PR just accumulates commits and
+**To cut a release:** merge the Release PR that release-please keeps open.
+That merge triggers the action to create the git tag and publish the GitHub
+Release with a generated `CHANGELOG.md` entry. No manual tagging. No manual
+release notes. Between milestones the Release PR just accumulates commits and
 sits open until you decide to ship.
 
-**Deliverables:**
+**Files:**
 - `.github/workflows/release-please.yml` — triggers on push to `main`; uses
-  `googleapis/release-please-action`; configured for `go` release type.
-- `release-please-config.json` and `.release-please-manifest.json` in repo root
-  (required by release-please to track current version).
+  `googleapis/release-please-action`; configured for `go` release type;
+  creates a **draft** GitHub Release (GoReleaser publishes it with artifacts).
+- `release-please-config.json` — repo root; tells release-please the release
+  type and package path.
+- `.release-please-manifest.json` — repo root; tracks the current version;
+  release-please updates this file automatically on each release.
 
 ---
 
 ### Part 3 — Automated Dependency Maintenance (Dependabot + auto-merge)
 
-**How it works:**
-
-Dependabot opens PRs automatically when new versions of dependencies are available.
-A companion GitHub Actions workflow auto-merges those PRs when CI passes, so
-security patches and minor upgrades land without any manual action.
+Dependabot opens PRs automatically when new versions of dependencies are
+available. A companion workflow auto-merges those PRs when CI passes.
 
 **Dependabot config** (`.github/dependabot.yml`) monitors three ecosystems weekly:
 
@@ -661,33 +694,168 @@ security patches and minor upgrades land without any manual action.
 |---|---|
 | `gomod` | `go.mod` / `go.sum` — library and tool dependencies |
 | `github-actions` | Action versions pinned in `.github/workflows/` |
-| `docker` | Base image tags in `Dockerfile` (`golang:1.26`, `tinygo/tinygo:0.41.0`, `caddy:2-alpine`) |
+| `docker` | Base image tags in `Dockerfile` (`golang:1.26`, `tinygo/tinygo:0.41.0`) |
 
 **Auto-merge workflow** (`.github/workflows/dependabot-automerge.yml`):
 - Triggers on `pull_request` events from the `dependabot[bot]` actor.
 - Runs the full CI suite (`make test-all`).
-- If CI passes and the update is **minor or patch** (semver), enables GitHub
-  auto-merge on the PR.
-- **Major** version bumps are left open for manual review — they may contain
-  breaking changes.
-- Requires the `GITHUB_TOKEN` `pull-requests: write` and `contents: write`
-  permissions; no external secrets needed.
+- **Minor or patch** updates: enables GitHub auto-merge if CI passes.
+- **Major** version bumps: left open for manual review.
+- Uses only `GITHUB_TOKEN` — no extra secrets needed.
 
-**Result:** security patches and routine updates merge themselves. The only
-Dependabot PRs that need attention are major version bumps, which happen rarely.
+Security patches and routine updates merge themselves. The only Dependabot PRs
+that need attention are major version bumps, which happen rarely.
+
+---
+
+### Part 4 — Version Wiring (CLI, TUI, Server)
+
+**Current state:**
+
+| Binary | Version var | Injected? | Exposed via |
+|---|---|---|---|
+| `resistor-cli` | `cmd/resistor-cli/cmd.version` | ✓ ldflags | `resistor-cli version` |
+| `resistor-tui` | `cmd/resistor-tui/app.version` | ✓ ldflags | title bar |
+| `resistor-server` | none | ✗ | nothing |
+
+**Makefile — dynamic VERSION from git:**
+
+```makefile
+VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+```
+
+Resolves to `v0.1.1`, `v0.2.0-3-gabcdef`, etc. automatically as release-please
+creates tags. No Makefile edits ever needed between releases.
+
+**Server version support:**
+
+Add `var version = "dev"` to `cmd/resistor-server/main.go` and expose it:
+1. `-version` flag — prints version and exits (mirrors CLI behaviour).
+2. `/health` response — extend to `{"status":"ok","version":"v0.1.0"}` so the
+   running version is queryable without exec.
+
+Add to `build-server` Makefile target:
+```makefile
+-ldflags "-X 'main.version=$(VERSION)' -s -w"
+```
+
+**Local Docker builds (for dev/testing):**
+
+`.git` is not in the Docker build context so `git describe` cannot run inside
+the container. Makefile targets pass version explicitly:
+
+```makefile
+docker-build:
+	docker build --build-arg WASM=go --build-arg VERSION=$(VERSION) \
+	  -t resistor-server:$(VERSION) .
+
+docker-build-tinygo:
+	docker build --build-arg WASM=tinygo --build-arg VERSION=$(VERSION) \
+	  -t resistor-server:$(VERSION)-tinygo .
+```
+
+`Dockerfile` declares `ARG VERSION=dev` and threads it through the `builder`
+stage via `-ldflags "-X 'main.version=${VERSION}'"`.
+
+---
+
+### Part 5 — GoReleaser (Binary Publishing + Docker Hub)
+
+GoReleaser fires on every git tag (created by release-please) and:
+1. Builds cross-platform binaries for `resistor-cli` and `resistor-tui`.
+2. Uploads them as assets to the GitHub Release that release-please created.
+3. Builds both Docker image variants and pushes them to Docker Hub.
+
+**Pipeline flow (nothing manual after initial setup):**
+
+```
+merge Release PR
+  → release-please creates tag + draft GitHub Release
+    → GoReleaser workflow fires on tag
+        → builds CLI + TUI binaries (linux/darwin/windows × amd64/arm64)
+        → uploads binaries + checksums to GitHub Release, publishes it
+        → builds resistor-server:vX.Y.Z (Go WASM)
+        → builds resistor-server:vX.Y.Z-tinygo + :latest (TinyGo WASM)
+        → pushes both images to Docker Hub
+```
+
+**Docker Hub repository:** auto-created on first push — no manual repo creation
+needed. The repo will appear at `hub.docker.com/r/sss7526/resistor` after the
+first GoReleaser run. The Hub description/README can be updated manually any
+time after, but is not required for the images to work.
+
+**`.goreleaser.yml` key sections:**
+
+```yaml
+before:
+  hooks:
+    - make build-wasm   # standard Go WASM must exist before server build
+
+builds:
+  - id: resistor-cli
+    main: ./cmd/resistor-cli
+    ldflags: ["-X 'github.com/sss7526/resistor/cmd/resistor-cli/cmd.version={{.Version}}'"]
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+
+  - id: resistor-tui
+    main: ./cmd/resistor-tui
+    ldflags: ["-X 'github.com/sss7526/resistor/cmd/resistor-tui/app.version={{.Version}}'"]
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+
+  - id: resistor-server
+    main: ./cmd/resistor-server
+    ldflags: ["-X 'main.version={{.Version}}' -s -w"]
+    goos: [linux]
+    goarch: [amd64, arm64]
+
+dockers:
+  - image_templates: ["sss7526/resistor:{{.Version}}"]
+    build_flag_templates:
+      - "--build-arg=WASM=go"
+      - "--build-arg=VERSION={{.Version}}"
+
+  - image_templates: ["sss7526/resistor:{{.Version}}-tinygo", "sss7526/resistor:latest"]
+    build_flag_templates:
+      - "--build-arg=WASM=tinygo"
+      - "--build-arg=VERSION={{.Version}}"
+
+release:
+  draft: false        # release-please already created the draft; GoReleaser publishes it
+  use_existing: true  # attach artifacts to release-please's release, don't create a new one
+```
+
+**GoReleaser workflow** (`.github/workflows/goreleaser.yml`):
+- Triggers on `push` to tags matching `v*`.
+- Logs in to Docker Hub using `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` secrets
+  (set up in one-time setup above).
+- Runs `goreleaser release --clean`.
+
+**Files:**
+- `.goreleaser.yml` — repo root; GoReleaser config.
+- `.github/workflows/goreleaser.yml` — triggers on tag push.
 
 ---
 
 ### Done When:
-- `release-please.yml` workflow is present and passes on a dry-run push to `main`.
-- Merging the initial Release PR creates the `v0.1.0` tag and GitHub Release
-  automatically.
+- All one-time setup steps completed (Docker Hub token, two GitHub secrets,
+  Actions permissions).
+- `release-please.yml` is present; on first merge to `main` it opens a Release PR.
+- Merging the Release PR creates the `v0.1.0` tag and draft GitHub Release.
+- GoReleaser fires on the tag, uploads CLI + TUI binaries for all platforms,
+  builds and pushes both Docker images to Docker Hub, publishes the release.
 - `go get github.com/sss7526/resistor@v0.1.0` resolves via the module proxy.
-- `.github/dependabot.yml` is present and Dependabot opens its first batch of
-  PRs within 24 hours of the config landing on `main`.
-- `dependabot-automerge.yml` workflow auto-merges a patch-level Dependabot PR
-  after CI passes (verified on first real Dependabot PR).
-- No manual tagging or release note writing is required for any future release.
+- `sss7526/resistor:v0.1.0` and `sss7526/resistor:v0.1.0-tinygo` are live on
+  Docker Hub — no manual `docker push` performed.
+- `.github/dependabot.yml` is present; Dependabot opens its first batch of PRs
+  within 24 hours.
+- `dependabot-automerge.yml` auto-merges a patch-level Dependabot PR after CI
+  passes (verified on first real Dependabot PR).
+- All three binaries report the correct release tag: `resistor-cli version`,
+  `resistor-tui` title bar, `resistor-server -version` and `/health`.
+- No manual tagging, version editing, binary uploading, or docker pushing is
+  required for any future release — merging the Release PR is the only action.
 
 ---
 
