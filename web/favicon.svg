@@ -1,23 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
   <title>Resistor Calculator</title>
-
-  <!-- Dark background -->
   <rect width="32" height="32" rx="4" fill="#111"/>
-
-  <!-- Left lead wire -->
-  <rect x="0" y="14" width="8" height="4" fill="#6a6a6a"/>
-  <!-- Right lead wire -->
-  <rect x="24" y="14" width="8" height="4" fill="#6a6a6a"/>
-
-  <!-- Resistor body (tan) -->
-  <rect x="8" y="8" width="16" height="16" rx="2.5" fill="#c8a86a"/>
-
-  <!-- Band 1: brown  (digit 1) -->
-  <rect x="10" y="8" width="3" height="16" fill="#6b3a2a"/>
-  <!-- Band 2: black  (digit 0) -->
-  <rect x="14" y="8" width="3" height="16" fill="#1a1010"/>
-  <!-- Band 3: orange (×1000 multiplier → 10 kΩ) -->
-  <rect x="18" y="8" width="3" height="16" fill="#d96c10"/>
-  <!-- Band 4: gold   (±5 % tolerance) -->
-  <rect x="22.5" y="8" width="2" height="16" fill="#c89a14"/>
+  <text x="16" y="24" font-family="serif" font-size="22" font-weight="bold"
+        text-anchor="middle" fill="#4a9a4a">&#937;</text>
 </svg>
