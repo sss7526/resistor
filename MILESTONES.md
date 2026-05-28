@@ -598,19 +598,96 @@ and provide a complete Caddy-fronted deployment configuration.
 
 ---
 
-# Milestone 17 — Version Release
+# Milestone 17 — Version Release & Automated Maintenance
 
-**Goal:** Cut a tagged `v0.1.0` release so the `go get` path in the README resolves
-and the module is addressable by version from external projects.
+**Goal:** Ship `v0.1.0`, then wire up automation so the project self-maintains
+(dependency updates, future releases) without manual intervention between active
+development milestones.
 
-### Deliverables:
-- `v0.1.0` git tag pushed to the remote
-- GitHub release created with release notes summarising the API surface
-- `go get github.com/sss7526/resistor@v0.1.0` resolves correctly via the module proxy
+---
+
+### Part 1 — Initial Release
+
+Push the first tagged release so the module is addressable via `go get` and
+indexed by `pkg.go.dev`.
+
+**Deliverables:**
+- `v0.1.0` git tag pushed to the remote.
+- GitHub Release created (by the automation below, not by hand).
+- `go get github.com/sss7526/resistor@v0.1.0` resolves via the module proxy.
+
+---
+
+### Part 2 — Automated Releases (release-please)
+
+**How it works:**
+
+`release-please` (Google) reads conventional commit messages (`feat:`, `fix:`,
+`chore:`, `docs:`, etc.) that are already the style used in this repo and
+maintains a rolling "Release PR" on `main`.
+
+- Every merge to `main` that contains `fix:` commits bumps the **patch** version.
+- Every merge to `main` that contains `feat:` commits bumps the **minor** version.
+- A `feat!:` commit or a `BREAKING CHANGE:` footer bumps the **major** version.
+
+When you want to cut a release, simply **merge the Release PR** that release-please
+has kept open. That merge triggers the action to:
+1. Create the git tag (`v0.1.1`, `v0.2.0`, etc.).
+2. Publish a GitHub Release with a generated `CHANGELOG.md` entry.
+3. No manual tagging, no manual release notes.
+
+Between active development milestones the Release PR just accumulates commits and
+sits open until you decide to ship.
+
+**Deliverables:**
+- `.github/workflows/release-please.yml` — triggers on push to `main`; uses
+  `googleapis/release-please-action`; configured for `go` release type.
+- `release-please-config.json` and `.release-please-manifest.json` in repo root
+  (required by release-please to track current version).
+
+---
+
+### Part 3 — Automated Dependency Maintenance (Dependabot + auto-merge)
+
+**How it works:**
+
+Dependabot opens PRs automatically when new versions of dependencies are available.
+A companion GitHub Actions workflow auto-merges those PRs when CI passes, so
+security patches and minor upgrades land without any manual action.
+
+**Dependabot config** (`.github/dependabot.yml`) monitors three ecosystems weekly:
+
+| Ecosystem | What it updates |
+|---|---|
+| `gomod` | `go.mod` / `go.sum` — library and tool dependencies |
+| `github-actions` | Action versions pinned in `.github/workflows/` |
+| `docker` | Base image tags in `Dockerfile` (`golang:1.26`, `tinygo/tinygo:0.41.0`, `caddy:2-alpine`) |
+
+**Auto-merge workflow** (`.github/workflows/dependabot-automerge.yml`):
+- Triggers on `pull_request` events from the `dependabot[bot]` actor.
+- Runs the full CI suite (`make test-all`).
+- If CI passes and the update is **minor or patch** (semver), enables GitHub
+  auto-merge on the PR.
+- **Major** version bumps are left open for manual review — they may contain
+  breaking changes.
+- Requires the `GITHUB_TOKEN` `pull-requests: write` and `contents: write`
+  permissions; no external secrets needed.
+
+**Result:** security patches and routine updates merge themselves. The only
+Dependabot PRs that need attention are major version bumps, which happen rarely.
+
+---
 
 ### Done When:
-- Tag exists on the remote and is visible via `go list -m github.com/sss7526/resistor@v0.1.0`.
-- Release notes cover all public API entry points.
+- `release-please.yml` workflow is present and passes on a dry-run push to `main`.
+- Merging the initial Release PR creates the `v0.1.0` tag and GitHub Release
+  automatically.
+- `go get github.com/sss7526/resistor@v0.1.0` resolves via the module proxy.
+- `.github/dependabot.yml` is present and Dependabot opens its first batch of
+  PRs within 24 hours of the config landing on `main`.
+- `dependabot-automerge.yml` workflow auto-merges a patch-level Dependabot PR
+  after CI passes (verified on first real Dependabot PR).
+- No manual tagging or release note writing is required for any future release.
 
 ---
 
