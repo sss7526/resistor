@@ -65,7 +65,7 @@
           </select>
         </div>
       </div>
-      <button class="action" onclick="runSelect()" disabled>Select</button>
+      <button id="btn-select" class="action" disabled>Select</button>
       <div id="sel-out" class="result" aria-live="polite" aria-atomic="true"></div>
     </div>
   </section>
@@ -193,7 +193,7 @@
         </select>
       </div>
 
-      <button class="action" onclick="runDecodeBands()" disabled>Decode</button>
+      <button id="btn-decode-bands" class="action" disabled>Decode</button>
       <div id="decode-bands-out" class="result" aria-live="polite" aria-atomic="true"></div>
     </div>
   </section>
@@ -214,7 +214,7 @@
           <input type="number" id="eb-tol" min="0" step="any" placeholder="5" value="5">
         </div>
       </div>
-      <button class="action" onclick="runEncodeBands()" disabled>Encode</button>
+      <button id="btn-encode-bands" class="action" disabled>Encode</button>
       <div id="encode-bands-out" class="result" aria-live="polite" aria-atomic="true"></div>
     </div>
   </section>
@@ -230,7 +230,7 @@
         <label for="smd-marking">Marking</label>
         <input type="text" id="smd-marking" placeholder="e.g. 472 or 4R7 or 01X" value="472">
       </div>
-      <button class="action" onclick="runDecodeSMD()" disabled>Decode</button>
+      <button id="btn-smd-decode" class="action" disabled>Decode</button>
       <div id="smd-decode-out" class="result" aria-live="polite" aria-atomic="true"></div>
     </div>
 
@@ -250,7 +250,7 @@
           </select>
         </div>
       </div>
-      <button class="action" onclick="runEncodeSMD()" disabled>Encode</button>
+      <button id="btn-smd-encode" class="action" disabled>Encode</button>
       <div id="smd-encode-out" class="result" aria-live="polite" aria-atomic="true"></div>
     </div>
 
@@ -424,7 +424,7 @@
         <input type="text" id="infer-marking" placeholder="e.g. 472">
       </div>
 
-      <button class="action" onclick="runInfer()" disabled>Infer</button>
+      <button id="btn-infer" class="action" disabled>Infer</button>
       <div id="infer-out" class="result" aria-live="polite" aria-atomic="true"></div>
     </div>
   </section>
@@ -459,7 +459,7 @@
           <input type="number" id="an-i" step="any" placeholder="e.g. 0.05">
         </div>
       </div>
-      <button class="action" onclick="runAnalyze()" disabled>Analyze</button>
+      <button id="btn-analyze" class="action" disabled>Analyze</button>
       <div id="analyze-out" class="result" aria-live="polite" aria-atomic="true"></div>
     </div>
   </section>

@@ -446,6 +446,14 @@ document.addEventListener('DOMContentLoaded', () => {
   initTabs();
   initWASM();
 
+  document.getElementById('btn-select').addEventListener('click', runSelect);
+  document.getElementById('btn-decode-bands').addEventListener('click', runDecodeBands);
+  document.getElementById('btn-encode-bands').addEventListener('click', runEncodeBands);
+  document.getElementById('btn-smd-decode').addEventListener('click', runDecodeSMD);
+  document.getElementById('btn-smd-encode').addEventListener('click', runEncodeSMD);
+  document.getElementById('btn-infer').addEventListener('click', runInfer);
+  document.getElementById('btn-analyze').addEventListener('click', runAnalyze);
+
   const dbCount = document.getElementById('db-count');
   if (dbCount) {
     dbCount.addEventListener('change', () => syncBandRows('db-row', 'db-count', 6));
