@@ -245,6 +245,7 @@ The included server embeds the compiled WASM and static assets into a single bin
 make build-server           # standard Go WASM
 make build-server TINYGO=1  # TinyGo WASM (~430 KB gzip)
 make build-server-tinygo    # alias for the above
+make install-server         # install to GOPATH/bin (on PATH)
 ```
 
 Run the server:
