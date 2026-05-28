@@ -206,13 +206,66 @@ make build-wasm
 
 This produces `web/resistor.wasm` and a versioned `web/wasm_exec.js` shim copied from the Go installation.
 
-Serve the `web/` directory from any static file server:
+### TinyGo (smaller binary)
+
+The standard Go toolchain produces a ~3.4 MB `.wasm` file. TinyGo produces a binary around **430 KB gzip** (~1.1 MB uncompressed). To use it:
+
+**Install TinyGo** (requires TinyGo 0.41.0+ for Go 1.26):
+
+```
+# Linux/macOS — download latest release from GitHub
+curl -L https://github.com/tinygo-org/tinygo/releases/latest/download/tinygo0.41.0.linux-amd64.tar.gz \
+  | tar -xz -C ~/
+
+export PATH="$HOME/tinygo/bin:$PATH"
+tinygo version   # should print tinygo version 0.41.x ...
+```
+
+> macOS users with Homebrew may instead run `brew install tinygo`, but verify the installed version supports Go 1.26 before use (`tinygo version`).
+
+Then build with TinyGo:
+
+```
+make build-wasm TINYGO=1
+# or the alias:
+make build-wasm-tinygo
+```
+
+You can override the TinyGo binary path if it is not on `PATH`:
+
+```
+make build-wasm TINYGO=1 TINYGO_BIN=/path/to/tinygo
+```
+
+### Web server
+
+The included server embeds the compiled WASM and static assets into a single binary:
+
+```
+make build-server           # standard Go WASM
+make build-server TINYGO=1  # TinyGo WASM (~430 KB gzip)
+make build-server-tinygo    # alias for the above
+```
+
+Run the server:
+
+```
+./bin/resistor-server                        # listens on :8080
+./bin/resistor-server --addr :9000           # custom port
+RESISTOR_ADDR=:9000 ./bin/resistor-server    # via env var
+```
+
+The server is designed to sit behind a TLS-terminating reverse proxy. It sets strict security headers by default (CSP with per-request nonce, COEP, COOP, X-Frame-Options, etc.) and does not require any configuration files.
+
+### Reference page
+
+Serve the `web/` directory from any static file server to access the minimal WASM reference page:
 
 ```
 cd web && python3 -m http.server 8080
 ```
 
-Then open `http://localhost:8080` for the reference page that exercises every exported function.
+Then open `http://localhost:8080`.
 
 ### JavaScript API
 

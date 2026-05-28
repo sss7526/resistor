@@ -110,6 +110,11 @@ build-server: build-wasm
 	@mkdir -p $(BINDIR)
 	go build -o $(BINDIR)/$(SERVER) $(SERVER_PATH)
 
+# Convenience alias: build server with TinyGo WASM (~430 KB gzip vs ~3.4 MB)
+.PHONY: build-server-tinygo
+build-server-tinygo:
+	$(MAKE) build-server TINYGO=1
+
 .PHONY: install-server
 install-server:
 	@echo "→ Installing server"
@@ -232,10 +237,12 @@ help:
 	@echo "  build-wasm          Build WASM module to web/ (standard Go)"
 	@echo "  build-wasm TINYGO=1 Build WASM module using TinyGo (~430 KB gzip)"
 	@echo "  build-wasm-tinygo   Alias for build-wasm TINYGO=1"
-	@echo "  build-server        Build web server binary to bin/ (depends on build-wasm)"
-	@echo "  install-cli         Install CLI to GOPATH/bin"
-	@echo "  install-tui         Install TUI to GOPATH/bin"
-	@echo "  install-server      Install server to GOPATH/bin"
+	@echo "  build-server          Build server (standard Go WASM)"
+	@echo "  build-server TINYGO=1 Build server with TinyGo WASM (~430 KB gzip)"
+	@echo "  build-server-tinygo   Alias for build-server TINYGO=1"
+	@echo "  install-cli           Install CLI to GOPATH/bin"
+	@echo "  install-tui           Install TUI to GOPATH/bin"
+	@echo "  install-server        Install server to GOPATH/bin"
 	@echo ""
 	@echo "Test"
 	@echo "  test                Unit tests"
