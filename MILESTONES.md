@@ -458,44 +458,80 @@ correctness harness; this milestone produces a real UI suitable for hobbyists.
 
 ### Server Hardening (production defaults, no flags required)
 
-- **Timeouts:** `ReadTimeout`, `WriteTimeout`, `IdleTimeout`, `ReadHeaderTimeout`
-  all set to conservative defaults (e.g. 5s/10s/120s/2s).
-- **Security headers on every response:**
-  - `X-Content-Type-Options: nosniff`
-  - `X-Frame-Options: DENY`
-  - `Referrer-Policy: strict-origin-when-cross-origin`
-  - `Content-Security-Policy` — zero unsafe directives. `WebAssembly.instantiateStreaming`
-    is a fetch-based API and does not require `wasm-unsafe-eval`; that directive is only
-    needed for buffer-based `WebAssembly.instantiate(ArrayBuffer)`. External scripts
-    covered by `'self'`. Inline `<script>` blocks use a **per-request nonce**
-    (generated with `crypto/rand`, injected into both the CSP header and the HTML
-    template by the request handler). Effective policy:
-    `script-src 'self' 'nonce-{n}'; object-src 'none'; base-uri 'self'`.
-  - Consequence: the HTML page cannot be served as a raw static file — it is rendered
-    via a Go template handler that injects the nonce. Static assets (`.wasm`, `.js`,
-    `.css`) are served directly from the embedded filesystem.
-- **Request size limit:** `http.MaxBytesReader` on every request body.
-- **Health endpoint:** `GET /health` returns `200 OK` with `{"status":"ok"}` —
-  no authentication, suitable for load balancer probes.
-- **Graceful shutdown:** `os.Signal` handler; drains in-flight requests before exit.
+#### Transport & lifecycle
+- **Timeouts:** `ReadHeaderTimeout` 2s, `ReadTimeout` 5s, `WriteTimeout` 10s,
+  `IdleTimeout` 120s — all set on `http.Server` directly, not overridable at runtime.
+- **Request size limit:** `http.MaxBytesReader` wraps every request body (even GET,
+  via middleware) to prevent slowloris-style body exhaustion.
+- **Panic recovery:** middleware recovers from handler panics and returns `500`
+  instead of crashing the process; panic detail is logged server-side, never sent
+  to the client.
+- **Graceful shutdown:** `os.Signal` handler for `SIGINT`/`SIGTERM`; calls
+  `server.Shutdown(ctx)` with a drain timeout so in-flight requests complete.
+- **No `Server` header:** strip or replace the default Go server banner to avoid
+  version disclosure.
 
-### UI
+#### Routing & input
+- **Method enforcement:** Go 1.22 `ServeMux` pattern `GET /path` — non-matching
+  methods receive `405 Method Not Allowed` automatically.
+- **No directory listing:** embedded `fs.FS` is served with an explicit file map;
+  directory index requests return `404`.
+- **Path canonicalisation:** `http.StripPrefix` / `http.RedirectHandler` for any
+  trailing-slash normalisation; no open redirects.
+- **No user-controlled input reaches the server** — this is a pure static-serving
+  app; the health endpoint accepts no parameters. Any query string or body on
+  non-health routes is ignored after size-limiting.
 
-- **Computation:** All computation client-side via the WASM module.
-  Server responsibility is serving static files only.
-- **Frontend philosophy:** HTML/CSS first. Use semantic HTML5 elements
-  (`<form>`, `<fieldset>`, `<output>`, `<details>`, `<meter>`, etc.).
-  Reactive updates driven by native browser events and CSS (`input`, `change`,
-  `:valid`, `:invalid`, custom properties). Add JavaScript only where the
-  browser has no native equivalent (WASM bootstrap, dynamic DOM updates that
-  CSS cannot express).
-- **Accessibility:** WCAG 2.1 AA target. Proper `<label>` associations,
-  `aria-live` regions for result updates, keyboard navigability, sufficient
-  color contrast.
-- **Responsive:** Single fluid layout; usable on a 320 px wide phone without
-  horizontal scroll. No CSS framework dependency.
-- **Color bands:** Rendered using actual resistor band colors (CSS custom
-  properties), not text labels.
+#### Security headers (applied by middleware to every response)
+| Header | Value |
+|--------|-------|
+| `Content-Security-Policy` | `default-src 'none'; script-src 'self' 'nonce-{n}'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'` |
+| `X-Content-Type-Options` | `nosniff` |
+| `X-Frame-Options` | `DENY` |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` |
+| `Permissions-Policy` | `camera=(), microphone=(), geolocation=(), payment=(), usb=()` |
+| `Cross-Origin-Opener-Policy` | `same-origin` |
+| `Cross-Origin-Embedder-Policy` | `require-corp` |
+| `Cross-Origin-Resource-Policy` | `same-origin` |
+
+**CSP nonce:** the server generates a 128-bit `crypto/rand` nonce per request,
+base64url-encodes it, and injects it into both the `Content-Security-Policy` header
+and the HTML template. External scripts (`wasm_exec.js`) are covered by `'self'`.
+No `unsafe-inline`, no `unsafe-eval`, no `wasm-unsafe-eval` — `instantiateStreaming`
+is fetch-based and requires neither. HTML is rendered via `html/template` (not
+`text/template`) which auto-escapes all template values.
+
+#### Health endpoint
+`GET /health` returns `200 OK`, `Content-Type: application/json`,
+body `{"status":"ok"}`. No auth. Suitable for load-balancer probes.
+All security headers still applied.
+
+### Client-Side Security (XSS and DOM attack surface)
+
+- **`html/template` rendering:** all server-injected values (nonce, version, etc.)
+  pass through Go's `html/template` context-aware escaper — safe in HTML, attribute,
+  JS, and URL contexts automatically.
+- **No `innerHTML`, no `document.write`, no `eval`:** all DOM updates use
+  `textContent`, `createElement`, and `appendChild`. No string-to-DOM paths exist.
+- **No `dangerouslySetInnerHTML` or equivalent:** WASM results are plain JS objects
+  (numbers, strings, arrays); they are displayed via `textContent` only, never
+  interpolated into markup strings.
+- **Trusted Types** (where supported): `require-trusted-types-for 'script'` added
+  to the CSP so browsers that support Trusted Types enforce the no-innerHTML rule
+  at the platform level.
+- **No third-party scripts, fonts, or stylesheets:** all assets are same-origin
+  and embedded in the binary. `default-src 'none'` in the CSP means any accidental
+  external load is blocked.
+- **No `postMessage` cross-origin:** the app does not use iframes or `postMessage`.
+  `frame-ancestors 'none'` prevents the page being framed by any origin.
+- **Form inputs:** all `<input>` elements have explicit `type` attributes to prevent
+  type-confusion. Numeric inputs use `type="number"` with `min`/`max`/`step`
+  constraints validated client-side by the browser before being passed to WASM.
+  WASM itself validates all inputs independently (defense in depth).
+- **No cookies, no localStorage, no sessionStorage:** the app is stateless;
+  no user data is persisted anywhere.
+- **`COEP: require-corp` + `COOP: same-origin`:** enables `SharedArrayBuffer`
+  isolation if ever needed, and prevents Spectre-class cross-origin data leaks.
 
 ### Views:
 | View | Description |
@@ -513,9 +549,14 @@ correctness harness; this milestone produces a real UI suitable for hobbyists.
   are hardcoded in source.
 - All five views are functional end-to-end via WASM.
 - Color band diagram renders correct colors for any valid input.
-- All security headers present on every response.
-- Health endpoint responds `200` at `GET /health`.
-- Graceful shutdown on `SIGINT`/`SIGTERM`.
+- All security headers from the table above are present on every response.
+- CSP nonce rotates per request; no two responses share a nonce.
+- `curl -v /health` returns `200` with `{"status":"ok"}`.
+- Graceful shutdown on `SIGINT`/`SIGTERM` — in-flight requests complete.
+- `Server` response header absent or replaced (no Go version disclosure).
+- No `innerHTML`, `eval`, `document.write`, or `new Function` anywhere in JS.
+- No third-party resources loaded; `default-src 'none'` CSP blocks any accidental
+  external load.
 - Works in current Chrome, Firefox, and Safari without a build step on the client.
 
 ---
