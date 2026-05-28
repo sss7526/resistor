@@ -838,6 +838,69 @@ release:
 
 ---
 
+### Part 6 — EC2 Deployment (one-time bootstrap, then hands-off)
+
+After GoReleaser pushes `:latest` to Docker Hub, Watchtower on the EC2 instance
+picks it up automatically within 5 minutes and restarts the container. The only
+human steps are the initial instance setup — never repeated.
+
+#### One-time AWS setup
+
+1. **Launch EC2 instance** — Ubuntu 24.04 LTS, `t3.micro` or larger.
+2. **Allocate an Elastic IP** and associate it with the instance. Without this
+   the public IP changes on every reboot, breaking DNS and TLS cert renewal.
+3. **Security group** — inbound rules:
+
+   | Port | Protocol | Source |
+   |---|---|---|
+   | 22 | TCP | your IP only |
+   | 80 | TCP | 0.0.0.0/0 |
+   | 443 | TCP | 0.0.0.0/0 |
+   | 443 | UDP | 0.0.0.0/0 (HTTP/3) |
+
+4. **Route 53** — create an `A` record pointing your domain → the Elastic IP.
+   DNS must resolve to the instance before first startup so Caddy can obtain
+   the Let's Encrypt TLS certificate.
+
+#### One-time instance bootstrap (single SSH session)
+
+```bash
+# Install Docker (includes Compose plugin)
+curl -fsSL https://get.docker.com | sh
+sudo usermod -aG docker ubuntu
+newgrp docker   # apply group without logout
+
+# Create app directory
+mkdir ~/resistor && cd ~/resistor
+
+# Copy docker-compose.yml and Caddyfile from the repo, then start
+RESISTOR_HOST=your-domain.com docker compose up -d
+```
+
+Caddy provisions the TLS certificate automatically on first startup. Watchtower
+begins polling Docker Hub immediately. Close the SSH session — nothing more to do.
+
+#### How future deploys work
+
+```
+merge Release PR
+  → GoReleaser pushes sss7526/resistor:latest (TinyGo image) to Docker Hub
+    → Watchtower detects new digest within 5 minutes
+      → pulls new image, recreates resistor container
+        → site is running the new version, zero manual action
+```
+
+Watchtower logs on the instance (`docker logs watchtower`) show every pull and
+restart with timestamps, providing a lightweight audit trail.
+
+#### What never changes after bootstrap
+- No SSH for deploys
+- No manual `docker pull` or `docker compose up`
+- No cert renewal — Caddy handles it automatically
+- No version tracking — Watchtower follows `:latest`
+
+---
+
 ### Done When:
 - All one-time setup steps completed (Docker Hub token, two GitHub secrets,
   Actions permissions).
@@ -856,6 +919,10 @@ release:
   `resistor-tui` title bar, `resistor-server -version` and `/health`.
 - No manual tagging, version editing, binary uploading, or docker pushing is
   required for any future release — merging the Release PR is the only action.
+- EC2 instance bootstrapped: Elastic IP assigned, Route 53 A record resolves,
+  Caddy TLS cert issued, `docker compose up -d` running with Watchtower.
+- A test release confirms end-to-end: merge Release PR → new image on Docker Hub
+  → Watchtower restarts container on EC2 within 5 minutes, no SSH required.
 
 ---
 
