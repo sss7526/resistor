@@ -1,20 +1,17 @@
 # resistor
 
-A Go library for working with fixed resistors. Converts between resistance values and visual encodings, snaps values to standard preferred series, and infers unknown properties from physical observations.
+A Go library for working with fixed resistors. Decode and encode color band and SMD markings, snap values to IEC preferred series, and infer unknown properties from physical observations.
 
-The library has no UI dependencies and is suitable for use in other Go projects, command-line tools, or WebAssembly modules.
-
----
+No UI dependencies. Import it as a library, or use the included CLI, TUI, and web app.
 
 ## Contents
 
 - [Library](#library)
 - [CLI](#cli)
-- [WASM](#wasm)
 - [TUI](#tui)
+- [Web](#web)
 - [Deployment](#deployment)
 - [Development](#development)
-- [Contributing](#contributing)
 - [License](#license)
 
 ---
@@ -25,68 +22,47 @@ The library has no UI dependencies and is suitable for use in other Go projects,
 go get github.com/sss7526/resistor
 ```
 
-### Color Code Decoding and Encoding
+### Color band decode and encode
 
-Decode 4-band, 5-band, and 6-band resistors per IEC 60062:
+Supports 4-band, 5-band, and 6-band resistors per IEC 60062:
 
 ```go
 bands := []resistor.Color{resistor.Green, resistor.Brown, resistor.Brown, resistor.Gold}
 spec, err := resistor.DecodeBands(bands)
-// spec.ResistanceOhms == 510
-// spec.TolerancePct  == 5
-```
+// spec.ResistanceOhms == 510, spec.TolerancePct == 5
 
-Encode a resistance and tolerance back to bands:
-
-```go
 spec := resistor.ResistorSpec{ResistanceOhms: 510, TolerancePct: 5}
 bands, err := resistor.EncodeBands(spec)
 // []Color{Green, Brown, Brown, Gold}
 ```
 
-6-band resistors include a temperature coefficient in the sixth band:
+6-band resistors include a temperature coefficient in the sixth band.
 
-```go
-spec := resistor.ResistorSpec{
-    ResistanceOhms: 4700,
-    TolerancePct:   1,
-    TempCoeffPPM:   50,
-}
-bands, err := resistor.EncodeBands(spec)
-```
+### SMD markings
 
-### SMD Markings
-
-Decode surface-mount markings in 3-digit, 4-digit, R-notation, and EIA-96 formats:
+Supports 3-digit, 4-digit, R-notation, and EIA-96 formats:
 
 ```go
 spec, err := resistor.DecodeSMD("472")   // 4700 ohms
 spec, err := resistor.DecodeSMD("4R7")   // 4.7 ohms
 spec, err := resistor.DecodeSMD("01C")   // EIA-96
-```
 
-Encode a resistance value to an SMD marking:
-
-```go
 marking, err := resistor.EncodeSMD(4700, resistor.SMDAuto)
 // "472"
 ```
 
-### E-Series Value Selection
+### E-series value selection
 
-Snap an arbitrary resistance to the nearest value in a standard IEC 60063 preferred series (E3 through E192):
+Snap an arbitrary resistance to the nearest IEC 60063 preferred series value (E3 through E192):
 
 ```go
-v, err := resistor.NearestStandard(487, resistor.E24, resistor.RoundNearest)
-// 487 -> 510
-
-v, err := resistor.NearestStandard(487, resistor.E12, resistor.RoundUp)
-// 487 -> 560
+v, err := resistor.NearestStandard(487, resistor.E24, resistor.RoundNearest) // 510
+v, err := resistor.NearestStandard(487, resistor.E12, resistor.RoundUp)      // 560
 ```
 
-### Standard Resistor Selection
+### Standard resistor selection
 
-Select a standard resistor for a target resistance. Returns the snapped value, color bands, and a record of any defaults that were applied:
+Returns the snapped value, color bands, and all defaults applied:
 
 ```go
 result, err := resistor.SelectStandardResistor(resistor.SelectionRequest{
@@ -98,11 +74,11 @@ result, err := resistor.SelectStandardResistor(resistor.SelectionRequest{
 // result.Assumptions        == ["Tolerance defaulted to +/-5%", ...]
 ```
 
-Unspecified fields default to E24, 5% tolerance, and nearest rounding. All defaults are recorded in `result.Assumptions`.
+Unspecified fields default to E24, 5% tolerance, and nearest rounding.
 
-### Physical Inference
+### Physical inference
 
-Estimate unknown properties from a physical observation. Accepts any combination of color bands, SMD marking, body color, length, and package type:
+Estimate unknown properties from any combination of bands, SMD marking, body color, length, and package type:
 
 ```go
 result, err := resistor.InferResistor(resistor.ObservedResistor{
@@ -111,67 +87,48 @@ result, err := resistor.InferResistor(resistor.ObservedResistor{
     LengthMM:  6.3,
 })
 // result.Spec.ResistanceOhms == 1000
-// result.Spec.PowerWatts     == 0.25  (inferred from length)
-// result.Spec.Type           == "metal_film"  (inferred from body color)
+// result.Spec.PowerWatts     == 0.25         (inferred from length)
+// result.Spec.Type           == "metal_film" (inferred from body color)
 // result.Meta.Confidence     == 0.92
-// result.Meta.Assumptions    == ["Blue body assumed metal film", "Length 5-7mm assumed 1/4W"]
+// result.Meta.Assumptions    == ["Blue body assumed metal film", ...]
 ```
 
-Deterministic facts (decoded from bands or markings) always take precedence over heuristic estimates. Confidence is a value in [0.0, 1.0] computed as a weighted average of the rules that fired.
+Decoded facts always take precedence over heuristic estimates. Confidence is a value in [0.0, 1.0].
 
-### Engineering Analysis
+### Engineering analysis
 
-Analyze a resistor under specified electrical conditions:
+Accepts voltage or current (or both, checked for Ohm's Law consistency):
 
 ```go
 report, err := resistor.AnalyzeResistor(resistor.AnalysisInput{
-    Spec: resistor.ResistorSpec{
-        ResistanceOhms: 100,
-        PowerWatts:     0.25,
-        TolerancePct:   5,
-    },
+    Spec:           resistor.ResistorSpec{ResistanceOhms: 100, PowerWatts: 0.25, TolerancePct: 5},
     AppliedVoltage: 10,
 })
 // report.Current                == 0.1 A
 // report.PowerDissipation       == 0.1 W
-// report.DeratedSafePower       == 0.125 W  (50% derating)
+// report.DeratedSafePower       == 0.125 W
 // report.WorstCaseResistanceMin == 95 ohms
 // report.WorstCaseResistanceMax == 105 ohms
-// report.Warnings               == [{Caution, "Power dissipation exceeds recommended 50% derated threshold"}]
+// report.Warnings               == [{Caution, "Power dissipation exceeds 50% derated threshold"}]
 ```
-
-Either `AppliedVoltage` or `AppliedCurrent` may be provided. If both are given, consistency with Ohm's Law is checked. Missing inputs produce structured warnings rather than errors.
 
 ---
 
 ## CLI
 
-The CLI provides non-interactive access to all library operations.
-
-### Installation
-
 ```
 go install github.com/sss7526/resistor/cmd/resistor-cli@latest
 ```
 
-Or, if you have the repository cloned:
+All commands accept `--json` for machine-readable output.
 
-```
-make install-cli
-```
-
-### Commands
-
-**Select a standard resistor value:**
-
+**Select a standard value:**
 ```
 resistor-cli select 487
-resistor-cli select 487 --series E12
-resistor-cli select 487 --tol 1 --round up
+resistor-cli select 487 --series E12 --tol 1 --round up
 ```
 
-**Infer properties from physical observations:**
-
+**Infer from physical observations:**
 ```
 resistor-cli infer --bands brown,black,red,gold
 resistor-cli infer --bands brown,black,red,gold --body blue --length 6.3
@@ -179,219 +136,156 @@ resistor-cli infer --smd 472 --pkg 0603
 ```
 
 **Analyze under electrical conditions:**
-
 ```
 resistor-cli analyze --r 100 --v 10 --pwr 0.25 --tol 5
 resistor-cli analyze --r 100 --i 0.1
 ```
 
-**Decode or encode SMD markings:**
-
+**Decode and encode SMD markings:**
 ```
 resistor-cli smd decode 472
 resistor-cli smd decode 4R7
 resistor-cli smd encode 4700
 ```
 
-All commands accept `--json` for machine-readable output.
-
----
-
-## WASM
-
-The WASM module exposes all core library operations as browser-callable JavaScript functions.
-
-```
-make build-wasm
-```
-
-This produces `web/resistor.wasm` and a versioned `web/wasm_exec.js` shim copied from the Go installation.
-
-### TinyGo (smaller binary)
-
-The standard Go toolchain produces a ~3.4 MB `.wasm` file. TinyGo produces a binary around **430 KB gzip** (~1.1 MB uncompressed). To use it:
-
-Install TinyGo following the [official instructions](https://tinygo.org/getting-started/install) (requires a version that supports Go 1.26). Once installed, build with TinyGo:
-
-```
-make build-wasm TINYGO=1
-# or the alias:
-make build-wasm-tinygo
-```
-
-You can override the TinyGo binary path if it is not on `PATH`:
-
-```
-make build-wasm TINYGO=1 TINYGO_BIN=/path/to/tinygo
-```
-
-### Web server
-
-The included server embeds the compiled WASM and static assets into a single binary:
-
-```
-make build-server           # standard Go WASM
-make build-server TINYGO=1  # TinyGo WASM (~430 KB gzip)
-make build-server-tinygo    # alias for the above
-make install-server         # install to GOPATH/bin (standard Go WASM)
-make install-server-tinygo  # install to GOPATH/bin (TinyGo WASM)
-```
-
-Run the server:
-
-```
-./bin/resistor-server                        # listens on :8080
-./bin/resistor-server --addr :9000           # custom port
-RESISTOR_ADDR=:9000 ./bin/resistor-server    # via env var
-```
-
-The server is designed to sit behind a TLS-terminating reverse proxy. It sets strict security headers by default (CSP with per-request nonce, COEP, COOP, X-Frame-Options, etc.) and does not require any configuration files.
-
-### JavaScript API
-
-All functions live on the `resistor` global object. Each returns `{ok: true, value: ...}` on success or `{ok: false, error: "..."}` on failure. Inputs are JSON strings; outputs are plain JavaScript objects.
-
-```js
-// Decode color bands
-resistor.decodeBands('["green","brown","brown","gold"]')
-// → {ok: true, value: {ResistanceOhms: 510, TolerancePct: 5, ...}}
-
-// Encode resistance to bands
-resistor.encodeBands('{"resistanceOhms":510,"tolerancePct":5}')
-// → {ok: true, value: ["green","brown","brown","gold"]}
-
-// Decode SMD marking
-resistor.decodeSMD("472")
-// → {ok: true, value: {ResistanceOhms: 4700, ...}}
-
-// Encode resistance to SMD marking
-resistor.encodeSMD('{"resistance":4700,"mode":"auto"}')
-// → {ok: true, value: "472"}
-
-// Snap to nearest standard value
-resistor.nearestStandard('{"value":487,"series":"E24","mode":"nearest"}')
-// → {ok: true, value: 510}
-
-// Full resistor selection (snap + encode bands)
-resistor.selectStandardResistor('{"resistance":487}')
-// → {ok: true, value: {SelectedResistance: 510, Bands: [...], ...}}
-
-// Infer from physical observations
-resistor.inferResistor('{"bands":["brown","black","red","gold"],"bodyColor":"blue","lengthMM":6.3}')
-// → {ok: true, value: {Spec: {...}, Meta: {Confidence: 0.92, Assumptions: [...]}}}
-
-// Electrical analysis
-resistor.analyzeResistor('{"spec":{"resistanceOhms":100,"powerWatts":0.25,"tolerancePct":5},"appliedVoltage":10}')
-// → {ok: true, value: {Current: 0.1, PowerDissipation: 0.1, Warnings: [...], ...}}
-```
-
 ---
 
 ## TUI
 
-The TUI provides an interactive terminal interface for the same operations.
+An interactive terminal interface for all operations.
 
 ```
 go install github.com/sss7526/resistor/cmd/resistor-tui@latest
 ```
 
-Or, if you have the repository cloned:
+Navigate with arrow keys, confirm with Enter, return to menu with Escape, quit with `q` or `Ctrl+C`.
+
+---
+
+## Web
+
+The WASM module exposes all library operations as browser-callable JavaScript functions. The included server embeds the compiled WASM and all static assets into a single binary.
+
+### Build
 
 ```
-make install-tui
+make build-wasm           # standard Go WASM (~3.4 MB uncompressed)
+make build-server         # server + standard WASM
+make build-server-tinygo  # server + TinyGo WASM (~430 KB gzip, ~1.1 MB uncompressed)
 ```
 
-Navigate with arrow keys, confirm with Enter, and return to the menu with Escape. Press `q` or `Ctrl+C` to quit.
+TinyGo must be installed for the TinyGo targets. See [tinygo.org/getting-started/install](https://tinygo.org/getting-started/install).
+
+Install to `GOPATH/bin`:
+```
+make install-server
+make install-server-tinygo
+```
+
+### Run
+
+```
+./bin/resistor-server               # listens on :8080
+./bin/resistor-server --addr :9000  # custom port
+RESISTOR_ADDR=:9000 ./bin/resistor-server
+```
+
+The server sets strict security headers (CSP with per-request nonce, COEP, COOP, X-Frame-Options) and is designed to sit behind a TLS-terminating reverse proxy.
+
+### JavaScript API
+
+All functions live on the `resistor` global and return `{ok: true, value: ...}` on success or `{ok: false, error: "..."}` on failure. Inputs are JSON strings.
+
+| Function | Input | Returns |
+|---|---|---|
+| `decodeBands` | `'["green","brown","brown","gold"]'` | `ResistorSpec` |
+| `encodeBands` | `'{"resistanceOhms":510,"tolerancePct":5}'` | `Color[]` |
+| `decodeSMD` | `"472"` | `ResistorSpec` |
+| `encodeSMD` | `'{"resistance":4700,"mode":"auto"}'` | marking string |
+| `nearestStandard` | `'{"value":487,"series":"E24","mode":"nearest"}'` | number |
+| `selectStandardResistor` | `'{"resistance":487}'` | `SelectionResult` |
+| `inferResistor` | `'{"bands":[...],"bodyColor":"blue","lengthMM":6.3}'` | `InferenceResult` |
+| `analyzeResistor` | `'{"spec":{...},"appliedVoltage":10}'` | `AnalysisReport` |
 
 ---
 
 ## Deployment
 
-The web server is distributed as a single self-contained binary that embeds all static
-assets (WASM module, JS, CSS, favicon). It is designed to run behind a TLS-terminating
-reverse proxy such as Caddy.
+The server binary is self-contained and designed to run behind Caddy (or any reverse proxy). Caddy handles TLS automatically via Let's Encrypt.
 
 ### Docker
 
-Build and run with the standard Go WASM:
-
 ```
+# Standard Go WASM
 docker build -t resistor .
 docker run --rm -p 8080:8080 resistor
-```
 
-For a smaller embedded WASM (~430 KB gzip) use TinyGo:
-
-```
+# TinyGo WASM (~430 KB gzip)
 docker build --build-arg WASM=tinygo -t resistor .
 ```
 
-The final image is based on `scratch` (binary only, no OS) and runs as UID 10001.
+The final image is built on `scratch` and runs as UID 10001.
 
 ### Docker Compose + Caddy
 
-The included `docker-compose.yml` starts the server and a Caddy reverse proxy together.
-Set `RESISTOR_HOST` to your public domain before running:
+Set `RESISTOR_HOST` to your public domain and start:
 
 ```
 RESISTOR_HOST=resistor.example.com docker compose up -d
 ```
 
-Caddy provisions TLS automatically via Let's Encrypt. For local testing omit the variable
-(defaults to `localhost`, HTTP only):
+Caddy provisions TLS automatically. For local testing (HTTP only, no cert needed):
 
 ```
 docker compose up
 ```
 
-To use TinyGo WASM in Compose:
+To use TinyGo WASM:
 
 ```
 WASM=tinygo RESISTOR_HOST=resistor.example.com docker compose up -d
 ```
 
-### Caddyfile
-
-The `Caddyfile` reads the hostname from `$RESISTOR_HOST` and reverse-proxies to the
-`resistor` container on port 8080. To customise (rate limiting, auth, etc.) edit
-`Caddyfile` before starting Compose. Caddy certificate data is persisted in the
-`caddy_data` named volume.
+Certificate data is persisted in the `caddy_data` named volume. Edit `Caddyfile` before starting Compose to add rate limiting, authentication, or other directives.
 
 ---
 
 ## Development
 
-Requires Go 1.21 or later. Clone the repository and use the Makefile targets.
+Requires Go 1.26 or later.
 
-Build binaries locally without installing:
-
+**Build:**
 ```
-make build        # build both to bin/
+make build        # CLI + TUI to bin/
 make build-cli
 make build-tui
+make build-server
 ```
 
-## Testing
-
+**Test:**
 ```
 make test         # unit tests
 make test-cli     # CLI integration tests
 make test-all     # both
-make smoke        # end-to-end smoke tests against the built CLI binary
+make smoke        # end-to-end smoke tests against the built binary
 ```
 
-Fuzz testing:
-
+**Fuzz:**
 ```
-make fuzz         # run all fuzz targets for 10 seconds each
+make fuzz
 make fuzz FUZZTIME=60s
 ```
 
-Benchmarks:
-
+**Benchmark:**
 ```
 go test -bench=. -benchtime=1s ./...
 go test -bench=BenchmarkInferResistor -benchmem ./...
+```
+
+**Lint and vulnerability check:**
+```
+make lint
+make vuln
 ```
 
 ---
