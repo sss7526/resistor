@@ -325,7 +325,7 @@ responsibility is serving static files.
 - ✓ `cmd/resistor-wasm/main.go` — entry point exporting all core operations
 - ✓ Consistent error handling — panics recovered, all errors returned as `{ok: false, error}`
 - ✓ `make build-wasm` — reproducible; outputs `web/resistor.wasm` + `web/wasm_exec.js`
-- ✓ `web/index.html` — reference page exercising every exported function
+- ✓ `web/embed.go` + `cmd/resistor-server/` — full web application serving the WASM module
 
 ### Done When:
 - ✓ All core library operations are callable from browser JavaScript.
@@ -348,7 +348,7 @@ making it practical to serve over the web without a loading penalty.
   TinyGo binary path overridable via `TINYGO_BIN` variable.
 - **JS shim:** TinyGo ships its own `wasm_exec.js` at `$(tinygo env TINYGOROOT)/targets/wasm_exec.js`.
   The build target copies it alongside the `.wasm` artifact. It exports the same `Go` class
-  as the standard runtime shim, so `web/index.html` is fully compatible with both builds.
+  as the standard runtime shim, so the server application is fully compatible with both builds.
 - **Default build unchanged:** `make build-wasm` still uses the standard Go toolchain
   (3.4 MB / ~950 KB gzip) so the build works without TinyGo installed.
 
@@ -437,11 +437,10 @@ marking gets an error.
 
 ---
 
-# Milestone 15 — Web Application
+# Milestone 15 — Web Application ✓
 
 **Goal:** Build a usable, production-ready web application on top of the WASM module,
-served by a hardened Go HTTP server. The reference page (`web/index.html`) is a
-correctness harness; this milestone produces a real UI suitable for hobbyists.
+served by a hardened Go HTTP server, suitable for hobbyists.
 
 ### Server Architecture
 
@@ -497,8 +496,9 @@ correctness harness; this milestone produces a real UI suitable for hobbyists.
 **CSP nonce:** the server generates a 128-bit `crypto/rand` nonce per request,
 base64url-encodes it, and injects it into both the `Content-Security-Policy` header
 and the HTML template. External scripts (`wasm_exec.js`) are covered by `'self'`.
-No `unsafe-inline`, no `unsafe-eval`, no `wasm-unsafe-eval` — `instantiateStreaming`
-is fetch-based and requires neither. HTML is rendered via `html/template` (not
+No `unsafe-inline`, no `unsafe-eval`. `'wasm-unsafe-eval'` is included in `script-src`
+— required by Chrome 97+ for `WebAssembly.instantiateStreaming()` regardless of
+fetch-based delivery. HTML is rendered via `html/template` (not
 `text/template`) which auto-escapes all template values.
 
 #### Health endpoint
@@ -536,28 +536,29 @@ All security headers still applied.
 ### Views:
 | View | Description |
 |---|---|
-| Select Resistor | Enter resistance + series, get snapped standard value and color band diagram |
-| Decode Bands | Click/tap colored band swatches to set bands; read resistance and tolerance |
-| SMD Tools | Decode or encode SMD markings |
-| Infer Resistor | Enter physical observations; read inferred properties and confidence score |
-| Analyze Resistor | Enter electrical conditions; read power dissipation, derating, and warnings |
+| ✓ Select Resistor | Enter resistance + series, get snapped standard value and color band diagram |
+| ✓ Decode Bands | Select band colors; read resistance and tolerance |
+| ✓ Encode Bands | Enter resistance + tolerance; get color band diagram |
+| ✓ SMD Tools | Decode or encode SMD markings (auto / standard / EIA-96 modes) |
+| ✓ Infer Resistor | Enter physical observations; read inferred properties and confidence score |
+| ✓ Analyze Resistor | Enter electrical conditions; read power dissipation, derating, and warnings |
 
 ### Done When:
-- `make build-server` produces `bin/resistor-server`.
-- Server starts with `./bin/resistor-server -addr :8080` and serves the app.
-- `-addr` flag (or `RESISTOR_ADDR` env) controls listen address; no defaults
+- ✓ `make build-server` produces `bin/resistor-server`.
+- ✓ Server starts with `./bin/resistor-server -addr :8080` and serves the app.
+- ✓ `-addr` flag (or `RESISTOR_ADDR` env) controls listen address; no defaults
   are hardcoded in source.
-- All five views are functional end-to-end via WASM.
-- Color band diagram renders correct colors for any valid input.
-- All security headers from the table above are present on every response.
-- CSP nonce rotates per request; no two responses share a nonce.
-- `curl -v /health` returns `200` with `{"status":"ok"}`.
-- Graceful shutdown on `SIGINT`/`SIGTERM` — in-flight requests complete.
-- `Server` response header absent or replaced (no Go version disclosure).
-- No `innerHTML`, `eval`, `document.write`, or `new Function` anywhere in JS.
-- No third-party resources loaded; `default-src 'none'` CSP blocks any accidental
+- ✓ All views are functional end-to-end via WASM.
+- ✓ Color band diagram renders correct colors for any valid input.
+- ✓ All security headers from the table above are present on every response.
+- ✓ CSP nonce rotates per request; no two responses share a nonce.
+- ✓ `curl -v /health` returns `200` with `{"status":"ok"}`.
+- ✓ Graceful shutdown on `SIGINT`/`SIGTERM` — in-flight requests complete.
+- ✓ `Server` response header absent or replaced (no Go version disclosure).
+- ✓ No `innerHTML`, `eval`, `document.write`, or `new Function` anywhere in JS.
+- ✓ No third-party resources loaded; `default-src 'none'` CSP blocks any accidental
   external load.
-- Works in current Chrome, Firefox, and Safari without a build step on the client.
+- ✓ Works in current Chrome, Firefox, and Safari without a build step on the client.
 
 ---
 

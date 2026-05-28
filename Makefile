@@ -15,6 +15,8 @@ CLI_PATH := ./cmd/resistor-cli
 TUI := resistor-tui
 TUI_PATH := ./cmd/resistor-tui
 WASM_PATH := ./cmd/resistor-wasm
+SERVER := resistor-server
+SERVER_PATH := ./cmd/resistor-server
 WEBDIR := web
 VERSION := v0.1.0
 
@@ -33,7 +35,7 @@ FUZZTIME ?= 10s
 all: fmt test build
 
 .PHONY: build
-build: build-cli build-tui build-wasm
+build: build-cli build-tui build-wasm build-server
 
 # Format code
 .PHONY: fmt
@@ -97,6 +99,32 @@ build-tui:
 install-tui:
 	@echo "→ Installing TUI"
 	go install $(TUI_PATH)
+
+# ---------------------------------------
+# Server Build Targets
+# ---------------------------------------
+
+.PHONY: build-server
+build-server: build-wasm
+	@echo "→ Building server binary"
+	@mkdir -p $(BINDIR)
+	go build -o $(BINDIR)/$(SERVER) $(SERVER_PATH)
+
+# Convenience alias: build server with TinyGo WASM (~430 KB gzip vs ~3.4 MB)
+.PHONY: build-server-tinygo
+build-server-tinygo:
+	$(MAKE) build-server TINYGO=1
+
+.PHONY: install-server
+install-server:
+	@echo "→ Installing server"
+	go install $(SERVER_PATH)
+
+.PHONY: install-server-tinygo
+install-server-tinygo:
+	$(MAKE) build-wasm TINYGO=1
+	@echo "→ Installing server (TinyGo WASM)"
+	go install $(SERVER_PATH)
 
 # ---------------------------------------
 # WASM Build Targets
@@ -194,6 +222,7 @@ clean:
 	rm -rf $(BINDIR)
 	rm -f $(GOBIN)/$(CLI)
 	rm -f $(GOBIN)/$(TUI)
+	rm -f $(GOBIN)/$(SERVER)
 	rm -f $(WEBDIR)/resistor.wasm $(WEBDIR)/wasm_exec.js
 
 # ---------------------------------------
@@ -208,14 +237,19 @@ help:
 	@echo "Default target: all (fmt + test + build)"
 	@echo ""
 	@echo "Build"
-	@echo "  build               Build CLI, TUI, and WASM"
+	@echo "  build               Build CLI, TUI, WASM, and server"
 	@echo "  build-cli           Build CLI binary to bin/"
 	@echo "  build-tui           Build TUI binary to bin/"
 	@echo "  build-wasm          Build WASM module to web/ (standard Go)"
 	@echo "  build-wasm TINYGO=1 Build WASM module using TinyGo (~430 KB gzip)"
 	@echo "  build-wasm-tinygo   Alias for build-wasm TINYGO=1"
-	@echo "  install-cli         Install CLI to GOPATH/bin"
-	@echo "  install-tui         Install TUI to GOPATH/bin"
+	@echo "  build-server          Build server (standard Go WASM)"
+	@echo "  build-server TINYGO=1 Build server with TinyGo WASM (~430 KB gzip)"
+	@echo "  build-server-tinygo   Alias for build-server TINYGO=1"
+	@echo "  install-cli           Install CLI to GOPATH/bin"
+	@echo "  install-tui           Install TUI to GOPATH/bin"
+	@echo "  install-server        Install server to GOPATH/bin (standard Go WASM)"
+	@echo "  install-server-tinygo Install server to GOPATH/bin (TinyGo WASM)"
 	@echo ""
 	@echo "Test"
 	@echo "  test                Unit tests"
