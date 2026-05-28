@@ -1,0 +1,6 @@
+# Hostname is set via the RESISTOR_HOST environment variable.
+# Caddy provisions TLS automatically (Let's Encrypt) for public hostnames.
+# For local testing set RESISTOR_HOST=localhost (HTTP only, no cert needed).
+{$RESISTOR_HOST} {
+    reverse_proxy resistor:8080
+}
