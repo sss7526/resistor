@@ -210,6 +210,11 @@ lint:
 	@echo "→ Running golangci-lint"
 	golangci-lint run --verbose --color always --enable-only=errcheck,govet,ineffassign,staticcheck,unused,gosec --timeout=5m
 
+.PHONY: vuln
+vuln:
+	@echo "→ Running govulncheck"
+	govulncheck -show verbose,color ./...
+
 # ---------------------------------------
 # Clean
 # ---------------------------------------
@@ -276,5 +281,6 @@ help:
 	@echo "  fmt                 Run go fmt"
 	@echo "  lint                Run golangci-lint (errcheck,govet,ineffassign,staticcheck,unused,gosec)"
 	@echo "  clean               Remove bin/, test cache, and fuzz artifacts"
+	@echo "  vuln                Run govulncheck"
 	@echo "  help                Show this message"
 	@echo ""
