@@ -611,3 +611,123 @@ and the module is addressable by version from external projects.
 ### Done When:
 - Tag exists on the remote and is visible via `go list -m github.com/sss7526/resistor@v0.1.0`.
 - Release notes cover all public API entry points.
+
+---
+
+# Milestone 18 — Circuit-Level Analysis
+
+**Goal:** Extend the library and web UI beyond single-component lookup into practical
+circuit calculations that hobbyists reach for every session at the bench.
+
+### Motivation
+
+The single-resistor model covers identification and basic safety checking well.
+The next most common real-world tasks are all multi-component or multi-condition:
+figuring out a voltage divider ratio, combining resistors from a limited parts bin,
+sizing an LED current-limiter, and reasoning about RC timing. These share a clean
+boundary — they are all resistor-centric circuits with deterministic closed-form
+solutions — making them a natural and cohesive second layer.
+
+### Library additions (`github.com/sss7526/resistor`)
+
+#### Series / Parallel
+
+```go
+// SeriesResistance returns the total resistance of resistors in series.
+func SeriesResistance(values ...float64) (float64, error)
+
+// ParallelResistance returns the equivalent resistance of resistors in parallel.
+func ParallelResistance(values ...float64) (float64, error)
+```
+
+Both validate that all inputs are positive and that at least one value is provided.
+`ParallelResistance` guards against division by zero on a zero-valued input.
+
+#### Voltage Divider
+
+```go
+type VoltageDividerResult struct {
+    OutputVoltage float64  // Vout = Vin × R2 / (R1 + R2)
+    CurrentMA     float64  // quiescent current in mA
+    R1            float64  // top resistor
+    R2            float64  // bottom resistor
+}
+
+// VoltageDivider computes output voltage and quiescent current for a resistive
+// voltage divider given supply voltage, R1 (top), and R2 (bottom).
+func VoltageDivider(vin, r1, r2 float64) (VoltageDividerResult, error)
+
+type DividerRequest struct {
+    Vin          float64   // supply voltage
+    TargetVout   float64   // desired output voltage
+    Series       ESeries   // preferred E-series for resistor selection
+    MaxCurrentMA float64   // quiescent current budget (0 = unconstrained)
+}
+
+// FindDividerPair selects the closest standard E-series R1/R2 pair that achieves
+// the target output voltage within the current budget.
+func FindDividerPair(req DividerRequest) (VoltageDividerResult, error)
+```
+
+#### LED Current Limiter
+
+```go
+type LEDCurrentLimiterResult struct {
+    Resistor         float64  // calculated series resistance in Ω
+    StandardResistor float64  // nearest E-series value
+    ActualCurrentMA  float64  // current with standard resistor
+    PowerDissipation float64  // power in the resistor (W)
+}
+
+// LEDCurrentLimiter calculates the series resistor needed to drive an LED at a
+// target current given supply voltage and LED forward voltage.
+func LEDCurrentLimiter(vsupply, vforward, targetCurrentMA float64, series ESeries) (LEDCurrentLimiterResult, error)
+```
+
+#### RC Time Constant
+
+```go
+type RCResult struct {
+    TauSeconds    float64  // τ = R × C
+    FrequencyHz   float64  // -3 dB frequency = 1 / (2π × τ)
+    Rise10_90MS   float64  // 10–90 % rise time ≈ 2.197 × τ (ms)
+}
+
+// RCTimeConstant computes timing and frequency characteristics for a series RC
+// circuit. R in ohms, C in farads.
+func RCTimeConstant(r, c float64) (RCResult, error)
+```
+
+### Web UI additions
+
+Two new tabs in the existing 6-tab layout:
+
+| Tab | Description |
+|---|---|
+| Networks | Series/parallel combination; enter 2–8 values, get equivalent resistance and E-series snap |
+| Circuits | Voltage divider (compute or find pair), LED current limiter, RC time constant |
+
+Existing tabs and API surface unchanged.
+
+### WASM additions
+
+Three new exported functions on the `resistor` global object following the existing
+`{ok, value}` / `{ok, error}` envelope:
+
+```js
+resistor.voltageDivider('{"vin":5,"r1":10000,"r2":4700}')
+resistor.findDividerPair('{"vin":5,"targetVout":3.3,"series":"E24","maxCurrentMA":1}')
+resistor.ledCurrentLimiter('{"vsupply":5,"vforward":2.1,"targetCurrentMA":20,"series":"E24"}')
+resistor.rcTimeConstant('{"r":10000,"c":0.0000001}')
+resistor.seriesResistance('[1000,2200,4700]')
+resistor.parallelResistance('[1000,1000]')
+```
+
+### Done When:
+- All new library functions have unit tests covering normal cases, edge cases
+  (single input, zero, negative), and round-trip consistency with existing API.
+- `FindDividerPair` result always uses valid E-series values verifiable by
+  `NearestStandard`.
+- WASM exports functional; existing WASM tests unaffected.
+- All two new UI tabs operational end-to-end.
+- `make test-all` and `make smoke` pass.
