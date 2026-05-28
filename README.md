@@ -234,7 +234,8 @@ The final image is built on `scratch` and runs as UID 10001.
 
 ### Docker Compose + Caddy
 
-Set `RESISTOR_HOST` to your public domain and start:
+The included `docker-compose.yml` pulls `sss7526/resistor:latest` from Docker Hub
+and runs it behind Caddy. Set `RESISTOR_HOST` to your public domain and start:
 
 ```
 RESISTOR_HOST=resistor.example.com docker compose up -d
@@ -246,13 +247,12 @@ Caddy provisions TLS automatically. For local testing (HTTP only, no cert needed
 docker compose up
 ```
 
-To use TinyGo WASM:
+Certificate data is persisted in the `caddy_data` named volume. Edit `Caddyfile`
+before starting Compose to add rate limiting, authentication, or other directives.
 
-```
-WASM=tinygo RESISTOR_HOST=resistor.example.com docker compose up -d
-```
-
-Certificate data is persisted in the `caddy_data` named volume. Edit `Caddyfile` before starting Compose to add rate limiting, authentication, or other directives.
+Watchtower runs as a sidecar and polls Docker Hub every 5 minutes. When a new
+`:latest` image is pushed it pulls and restarts the `resistor` container
+automatically. Caddy is intentionally excluded from Watchtower's watch scope.
 
 ---
 

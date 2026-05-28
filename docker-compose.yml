@@ -1,10 +1,6 @@
 services:
   resistor:
-    build:
-      context: .
-      args:
-        # Set WASM=tinygo for a smaller embedded WASM binary (~430 KB gzip).
-        WASM: ${WASM:-go}
+    image: sss7526/resistor:latest
     restart: unless-stopped
     environment:
       RESISTOR_ADDR: ":8080"
@@ -35,7 +31,7 @@ services:
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    command: --interval 300   # poll Docker Hub every 5 minutes
+    command: --interval 300 resistor   # only watch the resistor container
     networks:
       - internal
 
