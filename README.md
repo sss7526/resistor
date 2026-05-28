@@ -12,6 +12,7 @@ The library has no UI dependencies and is suitable for use in other Go projects,
 - [CLI](#cli)
 - [WASM](#wasm)
 - [TUI](#tui)
+- [Deployment](#deployment)
 - [Development](#development)
 - [Contributing](#contributing)
 - [License](#license)
@@ -301,6 +302,60 @@ make install-tui
 ```
 
 Navigate with arrow keys, confirm with Enter, and return to the menu with Escape. Press `q` or `Ctrl+C` to quit.
+
+---
+
+## Deployment
+
+The web server is distributed as a single self-contained binary that embeds all static
+assets (WASM module, JS, CSS, favicon). It is designed to run behind a TLS-terminating
+reverse proxy such as Caddy.
+
+### Docker
+
+Build and run with the standard Go WASM:
+
+```
+docker build -t resistor .
+docker run --rm -p 8080:8080 resistor
+```
+
+For a smaller embedded WASM (~430 KB gzip) use TinyGo:
+
+```
+docker build --build-arg WASM=tinygo -t resistor .
+```
+
+The final image is based on `scratch` (binary only, no OS) and runs as UID 10001.
+
+### Docker Compose + Caddy
+
+The included `docker-compose.yml` starts the server and a Caddy reverse proxy together.
+Set `RESISTOR_HOST` to your public domain before running:
+
+```
+RESISTOR_HOST=resistor.example.com docker compose up -d
+```
+
+Caddy provisions TLS automatically via Let's Encrypt. For local testing omit the variable
+(defaults to `localhost`, HTTP only):
+
+```
+docker compose up
+```
+
+To use TinyGo WASM in Compose:
+
+```
+WASM=tinygo RESISTOR_HOST=resistor.example.com docker compose up -d
+```
+
+### Caddyfile
+
+The `Caddyfile` reads the hostname from `$RESISTOR_HOST` and reverse-proxies to the
+`resistor` container on port 8080. To customise (rate limiting, auth, etc.) edit
+`Caddyfile` before starting Compose. Caddy certificate data is persisted in the
+`caddy_data` named volume.
 
 ---
 

@@ -1,0 +1,38 @@
+services:
+  resistor:
+    build:
+      context: .
+      args:
+        # Set WASM=tinygo for a smaller embedded WASM binary (~430 KB gzip).
+        WASM: ${WASM:-go}
+    restart: unless-stopped
+    environment:
+      RESISTOR_ADDR: ":8080"
+    networks:
+      - internal
+    # No host ports — Caddy reaches the server over the internal network.
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"   # HTTP/3
+    environment:
+      RESISTOR_HOST: ${RESISTOR_HOST:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - internal
+    depends_on:
+      - resistor
+
+networks:
+  internal:
+
+volumes:
+  caddy_data:
+  caddy_config:

@@ -559,10 +559,46 @@ All security headers still applied.
 - ✓ No third-party resources loaded; `default-src 'none'` CSP blocks any accidental
   external load.
 - ✓ Works in current Chrome, Firefox, and Safari without a build step on the client.
+- ✓ Footer CTA links to project source (GitHub) and documentation (pkg.go.dev) with
+  theme-consistent SVG icons; no external resources loaded.
 
 ---
 
-# Milestone 16 — Version Release
+# Milestone 16 — Containerised Deployment ✓
+
+**Goal:** Package the web server into a minimal, production-ready container image
+and provide a complete Caddy-fronted deployment configuration.
+
+### Deliverables
+
+- **`Dockerfile`** — multi-stage build; standard Go WASM by default, TinyGo opt-in
+  via `--build-arg WASM=tinygo`. Final stage is `scratch`; binary is statically
+  linked (`CGO_ENABLED=0 -ldflags="-s -w -trimpath"`).
+- **`docker-compose.yml`** — `resistor` + `caddy:2-alpine` services on an internal
+  network; only Caddy exposes ports 80/443; Caddy volumes for cert persistence.
+- **`Caddyfile`** — hostname from `$RESISTOR_HOST` env var; automatic HTTPS via
+  Let's Encrypt; reverse-proxies to `resistor:8080`.
+- **README** — deployment section covering Docker build, Compose, and Caddyfile
+  customisation.
+
+### Container Constraints
+
+- Final image: `scratch` (no shell, no OS, binary only).
+- Run as UID 10001 (non-root, no `/etc/passwd` required in scratch).
+- No healthcheck command in image (scratch has no tooling); health checks delegated
+  to Caddy active probing or orchestrator HTTP checks against `/health`.
+- Single binary embeds all static assets — no volume mounts needed at runtime.
+
+### Done When:
+- ✓ `docker build .` produces a working image; `docker run -p 8080:8080 <image>` serves the UI.
+- ✓ `docker build --build-arg WASM=tinygo .` produces a smaller image with TinyGo WASM.
+- ✓ `docker compose up` starts `resistor` + `caddy`; UI reachable via Caddy on port 80.
+- ✓ `Caddyfile` `$RESISTOR_HOST` env var controls the public hostname.
+- ✓ README deployment section is complete and accurate.
+
+---
+
+# Milestone 17 — Version Release
 
 **Goal:** Cut a tagged `v0.1.0` release so the `go get` path in the README resolves
 and the module is addressable by version from external projects.
