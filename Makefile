@@ -120,6 +120,12 @@ install-server:
 	@echo "→ Installing server"
 	go install $(SERVER_PATH)
 
+.PHONY: install-server-tinygo
+install-server-tinygo:
+	$(MAKE) build-wasm TINYGO=1
+	@echo "→ Installing server (TinyGo WASM)"
+	go install $(SERVER_PATH)
+
 # ---------------------------------------
 # WASM Build Targets
 # ---------------------------------------
@@ -242,7 +248,8 @@ help:
 	@echo "  build-server-tinygo   Alias for build-server TINYGO=1"
 	@echo "  install-cli           Install CLI to GOPATH/bin"
 	@echo "  install-tui           Install TUI to GOPATH/bin"
-	@echo "  install-server        Install server to GOPATH/bin"
+	@echo "  install-server        Install server to GOPATH/bin (standard Go WASM)"
+	@echo "  install-server-tinygo Install server to GOPATH/bin (TinyGo WASM)"
 	@echo ""
 	@echo "Test"
 	@echo "  test                Unit tests"
