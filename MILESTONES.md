@@ -439,28 +439,76 @@ marking gets an error.
 
 # Milestone 15 — Web Application
 
-**Goal:** Build a usable single-page web application on top of the WASM module.
-The reference page (`web/index.html`) is a correctness harness; this milestone
-produces a real UI suitable for hobbyists.
+**Goal:** Build a usable, production-ready web application on top of the WASM module,
+served by a hardened Go HTTP server. The reference page (`web/index.html`) is a
+correctness harness; this milestone produces a real UI suitable for hobbyists.
+
+### Server Architecture
+
+- **Language/stdlib:** Pure Go, `net/http` only — no third-party web frameworks.
+  Use Go 1.22+ `ServeMux` with method+path routing (`GET /`, `GET /health`, etc.).
+- **Static file serving:** Embed `web/` via `//go:embed` so the binary is fully
+  self-contained. Serve `.wasm` and `.js` with correct `Content-Type` headers.
+- **Configuration:** Address and port via flags (`-addr`, default `":8080"`) or
+  `RESISTOR_ADDR` env var; flags take precedence. No hardcoded interface or port.
+- **Binary location:** `bin/resistor-server`. Makefile target: `build-server`.
+  `make build` adds `build-server` to the default build chain.
+- **Intended deployment:** Behind a reverse proxy or TLS-termination endpoint
+  (nginx, Caddy, Fly.io, etc.). No TLS in the server itself.
+
+### Server Hardening (production defaults, no flags required)
+
+- **Timeouts:** `ReadTimeout`, `WriteTimeout`, `IdleTimeout`, `ReadHeaderTimeout`
+  all set to conservative defaults (e.g. 5s/10s/120s/2s).
+- **Security headers on every response:**
+  - `X-Content-Type-Options: nosniff`
+  - `X-Frame-Options: DENY`
+  - `Referrer-Policy: strict-origin-when-cross-origin`
+  - `Content-Security-Policy` — restrictive default; WASM requires `wasm-unsafe-eval`
+    in `script-src`.
+- **Request size limit:** `http.MaxBytesReader` on every request body.
+- **Health endpoint:** `GET /health` returns `200 OK` with `{"status":"ok"}` —
+  no authentication, suitable for load balancer probes.
+- **Graceful shutdown:** `os.Signal` handler; drains in-flight requests before exit.
+
+### UI
+
+- **Computation:** All computation client-side via the WASM module.
+  Server responsibility is serving static files only.
+- **Frontend philosophy:** HTML/CSS first. Use semantic HTML5 elements
+  (`<form>`, `<fieldset>`, `<output>`, `<details>`, `<meter>`, etc.).
+  Reactive updates driven by native browser events and CSS (`input`, `change`,
+  `:valid`, `:invalid`, custom properties). Add JavaScript only where the
+  browser has no native equivalent (WASM bootstrap, dynamic DOM updates that
+  CSS cannot express).
+- **Accessibility:** WCAG 2.1 AA target. Proper `<label>` associations,
+  `aria-live` regions for result updates, keyboard navigability, sufficient
+  color contrast.
+- **Responsive:** Single fluid layout; usable on a 320 px wide phone without
+  horizontal scroll. No CSS framework dependency.
+- **Color bands:** Rendered using actual resistor band colors (CSS custom
+  properties), not text labels.
 
 ### Views:
 | View | Description |
 |---|---|
-| Select Resistor | Enter a target resistance, get the nearest standard value and color band diagram |
-| Decode Bands | Click colored band swatches, read resistance and tolerance |
-| SMD Tools | Decode/encode SMD markings |
-| Infer Resistor | Enter physical observations, read inferred properties and confidence |
-| Analyze Resistor | Enter electrical conditions, read power, derating, and warnings |
-
-### Design Constraints:
-- All computation client-side via the WASM module — no server-side logic.
-- Color band display must use actual colors, not text labels.
-- Responsive layout; usable on a phone.
+| Select Resistor | Enter resistance + series, get snapped standard value and color band diagram |
+| Decode Bands | Click/tap colored band swatches to set bands; read resistance and tolerance |
+| SMD Tools | Decode or encode SMD markings |
+| Infer Resistor | Enter physical observations; read inferred properties and confidence score |
+| Analyze Resistor | Enter electrical conditions; read power dissipation, derating, and warnings |
 
 ### Done When:
-- All five views are functional.
+- `make build-server` produces `bin/resistor-server`.
+- Server starts with `./bin/resistor-server -addr :8080` and serves the app.
+- `-addr` flag (or `RESISTOR_ADDR` env) controls listen address; no defaults
+  are hardcoded in source.
+- All five views are functional end-to-end via WASM.
 - Color band diagram renders correct colors for any valid input.
-- Works in current Chrome, Firefox, and Safari without a build step.
+- All security headers present on every response.
+- Health endpoint responds `200` at `GET /health`.
+- Graceful shutdown on `SIGINT`/`SIGTERM`.
+- Works in current Chrome, Firefox, and Safari without a build step on the client.
 
 ---
 
