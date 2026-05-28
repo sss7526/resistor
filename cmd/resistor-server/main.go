@@ -30,6 +30,8 @@ type pageData struct {
 	Nonce string
 }
 
+var version = "dev"
+
 // noDirFS returns 404 for directory requests, preventing directory listings.
 type noDirFS struct{ fs.FS }
 
@@ -52,7 +54,13 @@ func (n noDirFS) Open(name string) (fs.File, error) {
 
 func main() {
 	addr := flag.String("addr", envOrDefault("RESISTOR_ADDR", ":8080"), "listen address (env: RESISTOR_ADDR)")
+	showVersion := flag.Bool("version", false, "print version and exit")
 	flag.Parse()
+
+	if *showVersion {
+		fmt.Println(version)
+		return
+	}
 
 	subFS, err := fs.Sub(webfiles.FS, ".")
 	if err != nil {
@@ -64,7 +72,7 @@ func main() {
 
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = fmt.Fprint(w, `{"status":"ok"}`)
+		_, _ = fmt.Fprintf(w, `{"status":"ok","version":%q}`, version)
 	})
 
 	mux.Handle("GET /static/", http.StripPrefix("/static", http.FileServer(http.FS(noDirFS{subFS}))))

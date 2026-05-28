@@ -10,6 +10,7 @@
 #
 # The ARG must be declared before the first FROM so it can be used in FROM lines.
 ARG WASM=go
+ARG VERSION=dev
 
 # ── Stage 1a: WASM via standard Go ───────────────────────────────────────────
 FROM golang:1.26 AS wasm-go
@@ -40,8 +41,9 @@ COPY . .
 # Overwrite the repo WASM artifacts with whichever variant was selected above.
 COPY --from=wasm /src/web/resistor.wasm web/resistor.wasm
 COPY --from=wasm /src/web/wasm_exec.js  web/wasm_exec.js
+ARG VERSION=dev
 RUN CGO_ENABLED=0 GOOS=linux go build \
-      -ldflags="-s -w" \
+      -ldflags="-s -w -X 'main.version=${VERSION}'" \
       -trimpath \
       -o /out/resistor-server \
       ./cmd/resistor-server

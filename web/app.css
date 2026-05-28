@@ -287,6 +287,13 @@ footer {
 }
 .cta-link svg { flex-shrink: 0; }
 
+.app-version {
+  color: var(--muted);
+  font-size: 0.75rem;
+  opacity: 0.55;
+  align-self: center;
+}
+
 @media (max-width: 600px) {
   header, main { padding-left: 1rem; padding-right: 1rem; }
   #wasm-status { margin-left: 1rem; margin-right: 1rem; }
