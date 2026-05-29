@@ -20,7 +20,7 @@ jobs:
           ref: ${{ inputs.tag }}
 
       - name: Use goreleaser config from main
-        run: git show origin/main:.goreleaser.yml > .goreleaser.yml
+        run: git show origin/main:.goreleaser.yml > /tmp/.goreleaser.yml
 
       - uses: actions/setup-go@v6
         with:
@@ -36,6 +36,6 @@ jobs:
         uses: goreleaser/goreleaser-action@v7
         with:
           version: latest
-          args: release --clean
+          args: release --clean --config /tmp/.goreleaser.yml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
