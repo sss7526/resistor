@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.5](https://github.com/sss7526/resistor/compare/v1.0.4...v1.0.5) (2026-05-29)
+
+
+### Bug Fixes
+
+* correct UnkownType typo to UnknownType ([f3eb321](https://github.com/sss7526/resistor/commit/f3eb3218d9207ab5ec47eae78dae4c52e9c01172))
+
 ## [1.0.4](https://github.com/sss7526/resistor/compare/v1.0.3...v1.0.4) (2026-05-29)
 
 
