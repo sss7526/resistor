@@ -162,6 +162,42 @@ func TestNearestStandard_E96_Sanity(t *testing.T) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// Branch Coverage
+///////////////////////////////////////////////////////////////////////////////
+
+func TestRoundToSignificant_Zero(t *testing.T) {
+	require.Equal(t, 0.0, roundToSignificant(0, 3))
+}
+
+func TestNearestStandard_RoundNearest_AtFirstBase(t *testing.T) {
+	// normalized == base[0] exactly → i=0 branch
+	v, err := NearestStandard(1000, E24, RoundNearest)
+	require.NoError(t, err)
+	require.Equal(t, 1000.0, v)
+}
+
+func TestNearestStandard_RoundNearest_CrossDecade(t *testing.T) {
+	// normalized=9.8 is closer to 10.0 than to E24's last value (9.1)
+	v, err := NearestStandard(9800, E24, RoundNearest)
+	require.NoError(t, err)
+	require.Equal(t, 10000.0, v)
+}
+
+func TestNearestStandard_RoundDown_ExactBaseValue(t *testing.T) {
+	// normalized=4.7 lands exactly on a base value → base[i] <= normalized is true
+	v, err := NearestStandard(470, E24, RoundDown)
+	require.NoError(t, err)
+	require.Equal(t, 470.0, v)
+}
+
+func TestNearestStandard_RoundNearest_LastBaseBeforeDecode(t *testing.T) {
+	// normalized=9.2 > E24 last value (9.1): i==len(base), but 9.2 is closer to 9.1 than to 10.0
+	v, err := NearestStandard(9200, E24, RoundNearest)
+	require.NoError(t, err)
+	require.Equal(t, 9100.0, v)
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // Error Handling
 ///////////////////////////////////////////////////////////////////////////////
 

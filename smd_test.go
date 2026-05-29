@@ -334,3 +334,20 @@ func TestSMD_E96_AutoNonRepresentable(t *testing.T) {
 	_, err := EncodeSMD(1234.5678, SMDAuto)
 	require.Error(t, err)
 }
+
+func TestSMD_Encode_UnsupportedMode(t *testing.T) {
+	_, err := EncodeSMD(1000, SMDEncodingMode(99))
+	require.Error(t, err)
+}
+
+func TestSMD_Decode_BareR_ZeroOhm(t *testing.T) {
+	// "R" decodes as 0.0 Ω via R-notation (left="" right=""), which is invalid
+	_, err := DecodeSMD("R")
+	require.Error(t, err)
+}
+
+func TestSMD_Decode_RNotation_ParseFloatError(t *testing.T) {
+	// "AR7" passes the R-notation check but "A.7" fails strconv.ParseFloat
+	_, err := DecodeSMD("AR7")
+	require.Error(t, err)
+}

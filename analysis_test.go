@@ -6,6 +6,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestAnalyzeResistor_NonPositiveResistance(t *testing.T) {
+	_, err := AnalyzeResistor(AnalysisInput{Spec: ResistorSpec{ResistanceOhms: 0}})
+	require.Error(t, err)
+}
+
 func TestAnalyzeResistor_VoltageDriven(t *testing.T) {
 
 	input := AnalysisInput{
@@ -94,6 +99,28 @@ func TestAnalyzeResistor_OhmsLawConsistency(t *testing.T) {
 	for _, w := range report2.Warnings {
 		require.NotEqual(t, WarningCaution, w.Level, "consistent V/I should not produce a WarningCaution from Ohm's Law check")
 	}
+}
+
+func TestAnalyzeResistor_DeratingCaution(t *testing.T) {
+	// Pdiss (1W) > DeratedSafePower (0.75W) but < PowerWatts (1.5W) → caution
+	input := AnalysisInput{
+		Spec: ResistorSpec{
+			ResistanceOhms: 100,
+			PowerWatts:     1.5,
+		},
+		AppliedVoltage: 10,
+	}
+	report, err := AnalyzeResistor(input)
+	require.NoError(t, err)
+
+	var found bool
+	for _, w := range report.Warnings {
+		if w.Level == WarningCaution {
+			found = true
+			break
+		}
+	}
+	require.True(t, found, "expected WarningCaution for dissipation exceeding 50%% derate")
 }
 
 func TestAnalyzeResistor_NoInputs(t *testing.T) {

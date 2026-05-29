@@ -75,6 +75,18 @@ func TestDecodeBands_InvalidCases(t *testing.T) {
 			name:  "invalid tolerance",
 			bands: []Color{Brown, Black, Red, Black},
 		},
+		{
+			name:  "5-band invalid digit color",
+			bands: []Color{Gold, Black, Black, Brown, Brown},
+		},
+		{
+			name:  "5-band invalid multiplier",
+			bands: []Color{Brown, Black, Black, None, Brown}, // None is not a multiplier
+		},
+		{
+			name:  "5-band invalid tolerance",
+			bands: []Color{Brown, Black, Black, Brown, Orange}, // Orange is not a tolerance
+		},
 	}
 
 	for _, tt := range tests {
@@ -222,4 +234,48 @@ func TestEncodeBands_SixBand(t *testing.T) {
 	}
 
 	require.Equal(t, expected, bands)
+}
+
+func TestDecodeBands_SixBand_Valid(t *testing.T) {
+	// 4700Ω ±1% 50ppm/°C → Yellow Violet Black Brown Brown Red
+	bands := []Color{Yellow, Violet, Black, Brown, Brown, Red}
+	spec, err := DecodeBands(bands)
+	require.NoError(t, err)
+	require.Equal(t, 4700.0, spec.ResistanceOhms)
+	require.Equal(t, 1.0, spec.TolerancePct)
+	require.Equal(t, 50, spec.TempCoeffPPM)
+}
+
+func TestDecodeBands_SixBand_InvalidTempCoeff(t *testing.T) {
+	// Gold is not a valid temperature coefficient band
+	bands := []Color{Brown, Black, Black, Brown, Brown, Gold}
+	_, err := DecodeBands(bands)
+	require.ErrorIs(t, err, ErrInvalidTempCoeff)
+}
+
+func TestEncodeBands_ZeroTolerance(t *testing.T) {
+	spec := ResistorSpec{ResistanceOhms: 1000}
+	_, err := EncodeBands(spec)
+	require.Error(t, err)
+}
+
+func TestEncodeBands_FiveBand_UnencodableTolerance(t *testing.T) {
+	// 1.5% is ≤2% so 5-band is attempted, but 1.5% has no color band
+	spec := ResistorSpec{ResistanceOhms: 4700, TolerancePct: 1.5}
+	_, err := EncodeBands(spec)
+	require.ErrorIs(t, err, ErrUnencodableValue)
+}
+
+func TestEncodeBands_SixBand_InvalidResistance(t *testing.T) {
+	// Non-integer when divided by any multiplier → encodeFiveBand fails
+	spec := ResistorSpec{ResistanceOhms: 123.456, TolerancePct: 1, TempCoeffPPM: 100}
+	_, err := EncodeBands(spec)
+	require.Error(t, err)
+}
+
+func TestEncodeBands_SixBand_InvalidTempCoeff(t *testing.T) {
+	// Valid resistance and tolerance but unrecognised ppm value
+	spec := ResistorSpec{ResistanceOhms: 1000, TolerancePct: 1, TempCoeffPPM: 999}
+	_, err := EncodeBands(spec)
+	require.ErrorIs(t, err, ErrUnencodableValue)
 }
