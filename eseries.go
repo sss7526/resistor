@@ -261,7 +261,13 @@ func NearestStandard(value float64, series ESeries, mode RoundingMode) (float64,
 		case i == 0:
 			best = base[0]
 		case i == len(base):
-			best = base[len(base)-1]
+			last := base[len(base)-1]
+			next := base[0] * math.Pow(10, exponent+1)
+			if math.Abs(normalized-next/math.Pow(10, exponent)) < math.Abs(normalized-last) {
+				result := next
+				return roundToSignificant(result, 6), nil
+			}
+			best = last
 		default:
 			lo, hi := base[i-1], base[i]
 			if math.Abs(normalized-lo) <= math.Abs(normalized-hi) {

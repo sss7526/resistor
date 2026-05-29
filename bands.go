@@ -37,6 +37,9 @@ var ErrInvalidMultiplier = errors.New("invalid multiplier color")
 // does not map to a known tolerance value.
 var ErrInvalidTolerance = errors.New("invalid tolerance color")
 
+// ErrInvalidTempCoeff indicates the 6th band color does not map to a known temperature coefficient.
+var ErrInvalidTempCoeff = errors.New("invalid temperature coefficient color")
+
 // ErrUnencodableValue indicates that the provided resistance
 // cannot be represented exactly in standard 4-band or 5-band format.
 //
@@ -177,9 +180,11 @@ func DecodeBands(bands []Color) (ResistorSpec, error) {
 
 	// If 6-band, decode temperature coefficient
 	if len(bands) == 6 {
-		if ppm, ok := TempCoeffValue[bands[5]]; ok {
-			spec.TempCoeffPPM = ppm
+		ppm, ok := TempCoeffValue[bands[5]]
+		if !ok {
+			return ResistorSpec{}, ErrInvalidTempCoeff
 		}
+		spec.TempCoeffPPM = ppm
 	}
 
 	return spec, nil
@@ -220,6 +225,9 @@ func EncodeBands(spec ResistorSpec) ([]Color, error) {
 	}
 
 	// 5-band for precision
+	if spec.TolerancePct == 0 {
+		return nil, errors.New("tolerance must be specified; zero is not a valid tolerance value")
+	}
 	if spec.TolerancePct <= 2.0 {
 		return encodeFiveBand(spec.ResistanceOhms, spec.TolerancePct)
 	}
@@ -259,12 +267,13 @@ func encodeFourBand(resistance float64, tolerance float64) ([]Color, error) {
 			continue
 		}
 
-		// Must be whole number (no fractional digits allowed)
-		if math.Mod(value, 1) != 0 {
+		// Must be whole number (no fractional digits allowed).
+		// Use epsilon comparison to handle IEEE 754 imprecision from fractional multipliers.
+		if math.Abs(value-math.Round(value)) > 1e-9 {
 			continue
 		}
 
-		intVal := int(value)
+		intVal := int(math.Round(value))
 		d1 := intVal / 10
 		d2 := intVal % 10
 
@@ -303,11 +312,11 @@ func encodeFiveBand(resistance float64, tolerance float64) ([]Color, error) {
 			continue
 		}
 
-		if math.Mod(value, 1) != 0 {
+		if math.Abs(value-math.Round(value)) > 1e-9 {
 			continue
 		}
 
-		intVal := int(value)
+		intVal := int(math.Round(value))
 		d1 := intVal / 100
 		d2 := (intVal / 10) % 10
 		d3 := intVal % 10

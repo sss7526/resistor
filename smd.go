@@ -203,7 +203,14 @@ func decodeRNotation(m string) (float64, error) {
 	}
 
 	combined := left + "." + right
-	return strconv.ParseFloat(combined, 64)
+	val, err := strconv.ParseFloat(combined, 64)
+	if err != nil {
+		return 0, err
+	}
+	if val == 0 {
+		return 0, fmt.Errorf("R-notation decoded to zero ohms: invalid marking %q", m)
+	}
+	return val, nil
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -301,7 +308,7 @@ func encodeStandardSMD(resistance float64) (string, error) {
 
 func isAllDigits(s string) bool {
 	for _, r := range s {
-		if !unicode.IsDigit(r) {
+		if r < '0' || r > '9' {
 			return false
 		}
 	}
