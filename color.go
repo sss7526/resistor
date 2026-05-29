@@ -24,6 +24,7 @@ const (
 	None Color = "none" // used when no tolerance band exists (±20%)
 )
 
+// String returns the color name as a plain string.
 func (c Color) String() string {
 	return string(c)
 }

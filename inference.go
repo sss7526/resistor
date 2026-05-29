@@ -31,9 +31,14 @@ Confidence Model:
 Final confidence is a weighted average of all applied rules.
 */
 type InferenceResult struct {
-	Spec          ResistorSpec
+	// Spec contains the inferred electrical characteristics of the resistor.
+	Spec ResistorSpec
+
+	// VoltageRating is a conservative estimated maximum operating voltage in volts.
 	VoltageRating float64
-	Meta          InferenceMeta
+
+	// Meta contains the confidence score and list of assumptions made during inference.
+	Meta InferenceMeta
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -66,9 +71,15 @@ Apply:
 	Returns a contribution and whether rule applied.
 */
 type InferenceRule struct {
-	Name   string
+	// Name is a human-readable identifier for this rule (used in logging/debugging).
+	Name string
+
+	// Weight is the relative confidence contribution of this rule in [0.0, 1.0].
 	Weight float64
-	Apply  func(obs ObservedResistor) (inferenceContribution, bool)
+
+	// Apply evaluates the rule against an observed resistor and returns a
+	// contribution and whether the rule fired.
+	Apply func(obs ObservedResistor) (inferenceContribution, bool)
 }
 
 ///////////////////////////////////////////////////////////////////////////////

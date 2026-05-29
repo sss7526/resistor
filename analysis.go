@@ -9,18 +9,26 @@ import (
 // Warning System
 ///////////////////////////////////////////////////////////////////////////////
 
-// WarningLevel indicates severity of an analysis warning
+// WarningLevel indicates the severity of an analysis warning.
 type WarningLevel string
 
 const (
-	WarningInfo    WarningLevel = "info"
+	// WarningInfo is an informational note; no action required.
+	WarningInfo WarningLevel = "info"
+
+	// WarningCaution indicates a condition that may warrant review.
 	WarningCaution WarningLevel = "caution"
-	WarningDanger  WarningLevel = "danger"
+
+	// WarningDanger indicates a condition likely to cause component failure.
+	WarningDanger WarningLevel = "danger"
 )
 
-// AnalysisWarning represents a structured engineering warning.
+// AnalysisWarning represents a structured engineering warning produced during analysis.
 type AnalysisWarning struct {
-	Level   WarningLevel
+	// Level is the severity classification of the warning.
+	Level WarningLevel
+
+	// Message is a human-readable description of the condition.
 	Message string
 }
 
@@ -31,30 +39,48 @@ type AnalysisWarning struct {
 // AnalysisInput contains electrical conditions for resistor analysis.
 //
 // Either AppliedVoltage or AppliedCurrent (or both) may be provided.
-// If both are provided, consistency is checked.
+// If both are provided, consistency is checked against Ohm's Law.
 type AnalysisInput struct {
+	// Spec is the resistor being analyzed.
 	Spec ResistorSpec
 
+	// AppliedVoltage is the voltage across the resistor in volts.
+	// Leave zero if not known.
 	AppliedVoltage float64
+
+	// AppliedCurrent is the current through the resistor in amperes.
+	// Leave zero if not known.
 	AppliedCurrent float64
 }
 
 // AnalysisReport contains deterministic electrical analysis results.
 //
-// DeratedSafePower, WorstCaseResistanceMin, and WorstCaseResistanceMax are
-// pointer fields. A nil value means the field was not computed (required input
-// was absent). A non-nil pointer to zero is a legitimately computed zero value
-// (e.g. WorstCaseResistanceMin at 100% tolerance).
+// Pointer fields (DeratedSafePower, WorstCaseResistanceMin, WorstCaseResistanceMax)
+// are nil when the required inputs were absent. A non-nil pointer to zero is a
+// legitimately computed value (e.g. WorstCaseResistanceMin at 100% tolerance).
 type AnalysisReport struct {
+	// PowerDissipation is the computed power dissipation in watts (P = I²R).
 	PowerDissipation float64
-	VoltageDrop      float64
-	Current          float64
 
+	// VoltageDrop is the voltage across the resistor in volts.
+	VoltageDrop float64
+
+	// Current is the current through the resistor in amperes.
+	Current float64
+
+	// DeratedSafePower is the 50%-derated safe operating power in watts.
+	// Nil if the rated power was not provided.
 	DeratedSafePower *float64 `json:"DeratedSafePower,omitempty"`
 
+	// WorstCaseResistanceMin is the minimum resistance at the tolerance limit in ohms.
+	// Nil if tolerance was not provided.
 	WorstCaseResistanceMin *float64 `json:"WorstCaseResistanceMin,omitempty"`
+
+	// WorstCaseResistanceMax is the maximum resistance at the tolerance limit in ohms.
+	// Nil if tolerance was not provided.
 	WorstCaseResistanceMax *float64 `json:"WorstCaseResistanceMax,omitempty"`
 
+	// Warnings contains any engineering warnings generated during analysis.
 	Warnings []AnalysisWarning
 }
 

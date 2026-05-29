@@ -49,9 +49,10 @@ to the nearest preferred number.
 type RoundingMode int
 
 const (
+	// RoundingUnspecified is the zero value; treated as RoundNearest by all functions.
 	RoundingUnspecified RoundingMode = iota
 
-	// RoundNearest selects the closes preferred value.
+	// RoundNearest selects the closest preferred value.
 	RoundNearest
 
 	// RoundUp selects the next highest preferred value.

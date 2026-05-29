@@ -31,12 +31,20 @@ These roles are used to:
 type BandRole int
 
 const (
+	// RoleDigit is a significant digit band (contributes a decimal digit to the resistance value).
 	RoleDigit BandRole = iota
+
+	// RoleMultiplier is the multiplier band (power-of-ten scaling factor).
 	RoleMultiplier
+
+	// RoleTolerance is the tolerance band (percentage deviation from nominal value).
 	RoleTolerance
+
+	// RoleTempCoeff is the temperature coefficient band (ppm/°C; 6-band resistors only).
 	RoleTempCoeff
 )
 
+// String returns the name of the band role.
 func (r BandRole) String() string {
 	switch r {
 	case RoleDigit:

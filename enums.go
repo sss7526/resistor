@@ -150,7 +150,7 @@ func ParsePackageType(input string) (PackageType, error) {
 }
 
 // AllPackageTypes returns the commonly selectable package types.
-// This excludes UnknownPkg.
+// UnknownPKG is excluded; it is used internally when a type cannot be determined.
 func AllPackageTypes() []PackageType {
 	return []PackageType{
 		ThroughHole,

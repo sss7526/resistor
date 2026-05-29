@@ -31,8 +31,13 @@ SMDEIA96:
 type SMDEncodingMode int
 
 const (
+	// SMDAuto tries standard 3/4-digit encoding first, then falls back to EIA-96.
 	SMDAuto SMDEncodingMode = iota
+
+	// SMDStandard forces 3/4-digit numeric encoding only.
 	SMDStandard
+
+	// SMDEIA96 forces EIA-96 two-digit-plus-letter encoding only.
 	SMDEIA96
 )
 
