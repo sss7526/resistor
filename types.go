@@ -54,8 +54,8 @@ const (
 	// MetalOxide is a metal oxide resistor; high stability, flame-resistant, green body typical.
 	MetalOxide ResistorType = "metal_oxide"
 
-	// UnkownType is used when the resistor construction type cannot be determined.
-	UnkownType ResistorType = "unknown"
+	// UnknownType is used when the resistor construction type cannot be determined.
+	UnknownType ResistorType = "unknown"
 )
 
 // ResistorSpec represents a fully specified resistor with known, deterministic values.
