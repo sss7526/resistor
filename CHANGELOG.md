@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.3](https://github.com/sss7526/resistor/compare/v1.0.2...v1.0.3) (2026-05-29)
+
+
+### Bug Fixes
+
+* set DOCKER_API_VERSION for watchtower compatibility ([bfb03ea](https://github.com/sss7526/resistor/commit/bfb03ea9ab28ab0e3f115c86a7fccde1071147ef))
+* set explicit container_name for watchtower to match ([8288c5b](https://github.com/sss7526/resistor/commit/8288c5bf57cec9230b210b952e65840afc622cf8))
+
 ## [1.0.2](https://github.com/sss7526/resistor/compare/v1.0.1...v1.0.2) (2026-05-29)
 
 
