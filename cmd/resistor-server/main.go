@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"crypto/rand"
-	"encoding/base64"
 	_ "embed"
+	"encoding/base64"
 	"flag"
 	"fmt"
 	"html/template"

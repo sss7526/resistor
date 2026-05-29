@@ -26,7 +26,7 @@ func TestMain(m *testing.M) {
 	// Build the CLI from current directory (cmd/resistor-cli)
 	ldflags := "-X github.com/sss7526/resistor/cmd/resistor-cli/cmd.version=v0.1.0"
 	build := exec.Command("go", "build", "-ldflags", ldflags, "-o", binaryPath, ".") //nolint:gosec // intentional subprocess in test setup
-	build.Dir = "." // current directory
+	build.Dir = "."                                                                  // current directory
 	if err := build.Run(); err != nil {
 		panic(err)
 	}

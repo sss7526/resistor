@@ -334,4 +334,3 @@ func TestSMD_E96_AutoNonRepresentable(t *testing.T) {
 	_, err := EncodeSMD(1234.5678, SMDAuto)
 	require.Error(t, err)
 }
-
