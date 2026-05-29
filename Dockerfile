@@ -23,6 +23,7 @@ RUN GOOS=js GOARCH=wasm go build -o web/resistor.wasm ./cmd/resistor-wasm && \
 
 # ── Stage 1b: WASM via TinyGo ────────────────────────────────────────────────
 FROM tinygo/tinygo:0.41.1 AS wasm-tinygo
+USER root
 WORKDIR /src
 COPY go.mod go.sum ./
 COPY . .
