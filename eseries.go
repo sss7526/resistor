@@ -133,7 +133,7 @@ which matches common manufacturer rounding behavior.
 func generateESeries(N int) []float64 {
 	values := make([]float64, 0, N)
 
-	for n := 0; n < N; n++ {
+	for n := range N {
 		v := math.Pow(10, float64(n)/float64(N))
 		v = roundToSignificant(v, 3)
 		values = append(values, v)

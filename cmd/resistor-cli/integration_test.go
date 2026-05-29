@@ -84,7 +84,7 @@ func TestCLI_Select_WithSeries(t *testing.T) {
 func TestCLI_Select_JSON(t *testing.T) {
 	out := runCLISuccess(t, "select", "487", "--json")
 
-	var parsed map[string]interface{}
+	var parsed map[string]any
 	require.NoError(t, json.Unmarshal([]byte(out), &parsed))
 	require.Equal(t, true, parsed["success"])
 }
@@ -117,7 +117,7 @@ func TestCLI_Infer_InvalidBand(t *testing.T) {
 func TestCLI_Infer_JSON(t *testing.T) {
 	out := runCLISuccess(t, "infer", "--bands", "brown,black,red,gold", "--json")
 
-	var parsed map[string]interface{}
+	var parsed map[string]any
 	require.NoError(t, json.Unmarshal([]byte(out), &parsed))
 	require.Equal(t, true, parsed["success"])
 }
@@ -191,7 +191,7 @@ func TestCLI_Analyze_Invalid(t *testing.T) {
 func TestCLI_Analyze_JSON(t *testing.T) {
 	out := runCLISuccess(t, "analyze", "--r", "100", "--v", "10", "--json")
 
-	var parsed map[string]interface{}
+	var parsed map[string]any
 	require.NoError(t, json.Unmarshal([]byte(out), &parsed))
 	require.Equal(t, true, parsed["success"])
 }
@@ -199,10 +199,10 @@ func TestCLI_Analyze_JSON(t *testing.T) {
 func TestCLI_Analyze_JSON_OptionalFieldsPresent(t *testing.T) {
 	out := runCLISuccess(t, "analyze", "--r", "100", "--v", "10", "--pwr", "0.5", "--tol", "5", "--json")
 
-	var parsed map[string]interface{}
+	var parsed map[string]any
 	require.NoError(t, json.Unmarshal([]byte(out), &parsed))
 
-	data, ok := parsed["data"].(map[string]interface{})
+	data, ok := parsed["data"].(map[string]any)
 	require.True(t, ok)
 
 	require.InDelta(t, 0.25, data["DeratedSafePower"], 1e-9)
@@ -213,10 +213,10 @@ func TestCLI_Analyze_JSON_OptionalFieldsPresent(t *testing.T) {
 func TestCLI_Analyze_JSON_OptionalFieldsAbsent(t *testing.T) {
 	out := runCLISuccess(t, "analyze", "--r", "100", "--v", "10", "--json")
 
-	var parsed map[string]interface{}
+	var parsed map[string]any
 	require.NoError(t, json.Unmarshal([]byte(out), &parsed))
 
-	data, ok := parsed["data"].(map[string]interface{})
+	data, ok := parsed["data"].(map[string]any)
 	require.True(t, ok)
 
 	_, hasDerated := data["DeratedSafePower"]
@@ -251,7 +251,7 @@ func TestCLI_SMD_Invalid(t *testing.T) {
 func TestCLI_SMD_JSON(t *testing.T) {
 	out := runCLISuccess(t, "smd", "decode", "472", "--json")
 
-	var parsed map[string]interface{}
+	var parsed map[string]any
 	require.NoError(t, json.Unmarshal([]byte(out), &parsed))
 	require.Equal(t, true, parsed["success"])
 }
@@ -272,7 +272,7 @@ func TestCLI_JSON_ExitCodeOnError(t *testing.T) {
 	require.True(t, ok, "expected *exec.ExitError")
 	require.NotEqual(t, 0, exitErr.ExitCode(), "exit code should be non-zero")
 
-	var parsed map[string]interface{}
+	var parsed map[string]any
 	require.NoError(t, json.Unmarshal(stdout.Bytes(), &parsed))
 	require.Equal(t, false, parsed["success"])
 	require.NotEmpty(t, parsed["error"])
