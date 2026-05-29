@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.0.2](https://github.com/sss7526/resistor/compare/v1.0.1...v1.0.2) (2026-05-29)
+
+
+### Bug Fixes
+
+* commit empty WASM stubs so go vet resolves embed patterns ([9ab491e](https://github.com/sss7526/resistor/commit/9ab491e487942ebd12dbd50e7086bf2a8ddcc6c4))
+* correct misspelling of "unknown" in PackageType constant ([4cf49d9](https://github.com/sss7526/resistor/commit/4cf49d97def773fc6e8e2febb27bc41f1f98c5bb))
+* make lint depend on build-wasm ([adda309](https://github.com/sss7526/resistor/commit/adda30983a3242cc2bc9539afdbc0fe3cac1570c))
+* match embed lint exclusion on error text not file path ([48cc056](https://github.com/sss7526/resistor/commit/48cc05603ac482742a4e2a18cba72e542e5a10dd))
+* update golangci.yml to v2 config format ([e0564d7](https://github.com/sss7526/resistor/commit/e0564d79795dacce4c9197f86ad73b978f8adb25))
+
 ## [1.0.1](https://github.com/sss7526/resistor/compare/v1.0.0...v1.0.1) (2026-05-29)
 
 
