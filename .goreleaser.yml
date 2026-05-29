@@ -65,7 +65,10 @@ dockers:
       - go.mod
       - go.sum
       - cmd/
-      - web/
+      - web/embed.go
+      - web/app.js
+      - web/app.css
+      - web/favicon.svg
       - internal/
       - analysis.go
       - bandroles.go
@@ -95,7 +98,10 @@ dockers:
       - go.mod
       - go.sum
       - cmd/
-      - web/
+      - web/embed.go
+      - web/app.js
+      - web/app.css
+      - web/favicon.svg
       - internal/
       - analysis.go
       - bandroles.go
