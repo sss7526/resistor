@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.4](https://github.com/sss7526/resistor/compare/v1.0.3...v1.0.4) (2026-05-29)
+
+
+### Bug Fixes
+
+* address all 8 confirmed code-review findings ([da94ef0](https://github.com/sss7526/resistor/commit/da94ef00d8ff52527fd790886deac9a5c3a27c8c))
+
 ## [1.0.3](https://github.com/sss7526/resistor/compare/v1.0.2...v1.0.3) (2026-05-29)
 
 
