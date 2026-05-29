@@ -222,7 +222,7 @@ fuzz: fuzz-bands fuzz-smd fuzz-series
 # ---------------------------------------
 
 .PHONY: lint
-lint:
+lint: build-wasm
 	@echo "→ Running golangci-lint"
 	golangci-lint run --verbose --color always --enable-only=errcheck,govet,ineffassign,staticcheck,unused,gosec --timeout=5m
 
