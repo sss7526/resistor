@@ -1,6 +1,7 @@
 services:
   resistor:
     image: sss7526/resistor:latest
+    container_name: resistor
     restart: unless-stopped
     environment:
       RESISTOR_ADDR: ":8080"
