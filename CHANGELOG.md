@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/sss7526/resistor/compare/v1.0.0...v1.0.1) (2026-05-29)
+
+
+### Bug Fixes
+
+* run wasm-tinygo build stage as root ([4eea790](https://github.com/sss7526/resistor/commit/4eea790764e5ccc4175f6d4eb7653aa3c2ee132f))
+
 ## 1.0.0 (2026-05-28)
 
 
