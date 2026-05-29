@@ -19,6 +19,9 @@ jobs:
           fetch-depth: 0
           ref: ${{ inputs.tag }}
 
+      - name: Use goreleaser config from main
+        run: git show origin/main:.goreleaser.yml > .goreleaser.yml
+
       - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
