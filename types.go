@@ -17,7 +17,7 @@ const (
 
 	Axial      PackageType = "axial"
 	Radial     PackageType = "radial"
-	UnknownPKG PackageType = "unkown"
+	UnknownPKG PackageType = "unknown"
 )
 
 // ResistorType represents construction material
