@@ -129,12 +129,13 @@ func encodeBandsJS(_ js.Value, args []js.Value) js.Value {
 	if err := json.Unmarshal([]byte(raw), &in); err != nil {
 		return jsErr(fmt.Errorf("invalid input: %w", err))
 	}
+	pkg, _ := resistor.ParsePackageType(in.Package)
 	spec := resistor.ResistorSpec{
 		ResistanceOhms: in.ResistanceOhms,
 		TolerancePct:   in.TolerancePct,
 		PowerWatts:     in.PowerWatts,
 		TempCoeffPPM:   in.TempCoeffPPM,
-		Package:        resistor.PackageType(in.Package),
+		Package:        pkg,
 		Type:           resistor.ResistorType(in.Type),
 	}
 	bands, err := resistor.EncodeBands(spec)
@@ -307,10 +308,11 @@ func inferResistorJS(_ js.Value, args []js.Value) js.Value {
 	if err := json.Unmarshal([]byte(raw), &in); err != nil {
 		return jsErr(fmt.Errorf("invalid input: %w", err))
 	}
+	pkg, _ := resistor.ParsePackageType(in.Package)
 	obs := resistor.ObservedResistor{
 		BodyColor: resistor.Color(in.BodyColor),
 		LengthMM:  in.LengthMM,
-		Package:   resistor.PackageType(in.Package),
+		Package:   pkg,
 		Marking:   in.Marking,
 	}
 	if len(in.Bands) > 0 {
@@ -361,13 +363,14 @@ func analyzeResistorJS(_ js.Value, args []js.Value) js.Value {
 	if err := json.Unmarshal([]byte(raw), &in); err != nil {
 		return jsErr(fmt.Errorf("invalid input: %w", err))
 	}
+	pkg, _ := resistor.ParsePackageType(in.Spec.Package)
 	input := resistor.AnalysisInput{
 		Spec: resistor.ResistorSpec{
 			ResistanceOhms: in.Spec.ResistanceOhms,
 			PowerWatts:     in.Spec.PowerWatts,
 			TolerancePct:   in.Spec.TolerancePct,
 			TempCoeffPPM:   in.Spec.TempCoeffPPM,
-			Package:        resistor.PackageType(in.Spec.Package),
+			Package:        pkg,
 			Type:           resistor.ResistorType(in.Spec.Type),
 		},
 		AppliedVoltage: in.AppliedVoltage,
