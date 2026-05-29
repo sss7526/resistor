@@ -33,7 +33,7 @@ builds:
     ldflags:
       - "-X 'main.version={{.Version}}' -s -w"
     goos: [linux]
-    goarch: [amd64, arm64]
+    goarch: [amd64]
 
 archives:
   - id: cli-archive
@@ -55,18 +55,60 @@ checksum:
 
 dockers:
   - id: resistor-go
+    goos: linux
+    goarch: amd64
+    ids: [resistor-server]
     image_templates:
       - "sss7526/resistor:{{ .Version }}"
     dockerfile: Dockerfile
+    extra_files:
+      - go.mod
+      - go.sum
+      - cmd/
+      - web/
+      - internal/
+      - analysis.go
+      - bandroles.go
+      - bands.go
+      - color.go
+      - doc.go
+      - enums.go
+      - eseries.go
+      - inference.go
+      - mappings.go
+      - select.go
+      - smd.go
+      - types.go
     build_flag_templates:
       - "--build-arg=WASM=go"
       - "--build-arg=VERSION={{ .Version }}"
 
   - id: resistor-tinygo
+    goos: linux
+    goarch: amd64
+    ids: [resistor-server]
     image_templates:
       - "sss7526/resistor:{{ .Version }}-tinygo"
       - "sss7526/resistor:latest"
     dockerfile: Dockerfile
+    extra_files:
+      - go.mod
+      - go.sum
+      - cmd/
+      - web/
+      - internal/
+      - analysis.go
+      - bandroles.go
+      - bands.go
+      - color.go
+      - doc.go
+      - enums.go
+      - eseries.go
+      - inference.go
+      - mappings.go
+      - select.go
+      - smd.go
+      - types.go
     build_flag_templates:
       - "--build-arg=WASM=tinygo"
       - "--build-arg=VERSION={{ .Version }}"
