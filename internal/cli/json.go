@@ -6,9 +6,9 @@ import (
 )
 
 type JSONResponse struct {
-	Success bool        `json:"success"`
-	Data    any `json:"data,omitempty"`
-	Error   string      `json:"error,omitempty"`
+	Success bool   `json:"success"`
+	Data    any    `json:"data,omitempty"`
+	Error   string `json:"error,omitempty"`
 }
 
 func OutputJSONSuccess(data any) error {

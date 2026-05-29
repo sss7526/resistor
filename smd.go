@@ -208,7 +208,7 @@ func decodeRNotation(m string) (float64, error) {
 		return 0, err
 	}
 	if val == 0 {
-		return 0, fmt.Errorf("R-notation decoded to zero ohms: invalid marking %q", m)
+		return 0, fmt.Errorf("zero-ohm R-notation marking %q is invalid", m)
 	}
 	return val, nil
 }
