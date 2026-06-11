@@ -24,4 +24,5 @@ jobs:
       - run: make vuln
       - uses: golangci/golangci-lint-action@v6
         with:
+          version: latest
           args: --enable-only=errcheck,govet,ineffassign,staticcheck,unused,gosec,modernize --timeout=5m
