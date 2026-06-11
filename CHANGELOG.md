@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.6](https://github.com/sss7526/resistor/compare/v1.0.5...v1.0.6) (2026-06-11)
+
+
+### Bug Fixes
+
+* bump go directive to 1.26.4 to resolve stdlib vulnerabilities ([6cbe3fb](https://github.com/sss7526/resistor/commit/6cbe3fb1fbdfc7019875b46b262f884c906112c4))
+
 ## [1.0.5](https://github.com/sss7526/resistor/compare/v1.0.4...v1.0.5) (2026-05-29)
 
 
