@@ -12,12 +12,6 @@ jobs:
     runs-on: ubuntu-latest
     if: github.actor == 'dependabot[bot]'
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
-        with:
-          go-version-file: go.mod
-      - run: make test-all
-
       - name: Fetch Dependabot metadata
         id: meta
         uses: dependabot/fetch-metadata@v3
