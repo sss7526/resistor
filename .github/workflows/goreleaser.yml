@@ -22,7 +22,7 @@ jobs:
       - name: Use goreleaser config from main
         run: git show origin/main:.goreleaser.yml > /tmp/.goreleaser.yml
 
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
 
