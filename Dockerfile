@@ -13,7 +13,7 @@ ARG WASM=go
 ARG VERSION=dev
 
 # ── Stage 1a: WASM via standard Go ───────────────────────────────────────────
-FROM golang:1.26 AS wasm-go
+FROM golang:1.27 AS wasm-go
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
@@ -34,7 +34,7 @@ RUN tinygo build -target=wasm -o web/resistor.wasm ./cmd/resistor-wasm && \
 FROM wasm-${WASM} AS wasm
 
 # ── Stage 3: compile server binary ───────────────────────────────────────────
-FROM golang:1.26 AS builder
+FROM golang:1.27 AS builder
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
